@@ -1,5 +1,9 @@
 # CyBroLog
 
+### Russian version
+
+See [`README.ru.md`](README.ru.md).
+
 **CyBroLog** is an executable compact accountability language for multi-agent coordination.
 
 It began as the sisters' internal A2A dialect and is now published under the user-approved name **CyBroLog**. Its purpose is not to make agents sound cryptic. Its purpose is to compress coordination while preserving what usually gets lost under compression: authority, evidence, provenance, proof obligations, safety gates, absence scope, and exact operational boundaries.
@@ -117,6 +121,4 @@ Reference implementation: **activated for local protocol use** after local parse
 
 This implementation is intentionally small and conservative. It is a sharp executable seed, not a maximal parser for every possible future CyBroLog surface.
 
-## Russian version
 
-See [`README.ru.md`](README.ru.md).
