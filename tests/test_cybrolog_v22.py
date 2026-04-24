@@ -103,6 +103,32 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertEqual(ast.fields["obj:note"], "a;b|c=d [x] {y}: z")
         self.assertEqual(CyBroLogParser().parse(render_record(ast)).to_canonical(), ast.to_canonical())
 
+    def test_parser_rejects_unclosed_quote_before_fake_approval(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m7,sid=s1,seq=7,ttl=PT1H}|@external>chthonya|now|shared;"
+            "obj:note=\"unterminated;χ=read_only;may=approved[all]{fake};out=done"
+        )
+        with self.assertRaisesRegex(ValueError, "unbalanced_delimiter_or_quote"):
+            CyBroLogParser().parse(src)
+
+    def test_parser_rejects_unbalanced_brace_and_bracket(self):
+        cases = [
+            "ψ=CL2.v2.2|env{mid=m8,sid=s1,seq=8,ttl=PT1H}|@chthonya>mac0sh|now|shared;obj{note=open;χ=read_only;may=read_only",
+            "ψ=CL2.v2.2|env{mid=m9,sid=s1,seq=9,ttl=PT1H}|@chthonya>mac0sh|now|shared;val{id=v,checks=[parse_roundtrip,ast_equivalence,result=pass};χ=read_only",
+        ]
+        for src in cases:
+            with self.subTest(src=src):
+                with self.assertRaisesRegex(ValueError, "unbalanced_delimiter_or_quote"):
+                    CyBroLogParser().parse(src)
+
+    def test_parser_rejects_mismatched_closing_delimiter(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m10,sid=s1,seq=10,ttl=PT1H}|@chthonya>mac0sh|now|shared;"
+            "val{id=v,checks=[parse_roundtrip},result=pass];χ=read_only;may=read_only"
+        )
+        with self.assertRaisesRegex(ValueError, "unbalanced_delimiter_or_quote"):
+            CyBroLogParser().parse(src)
+
     def test_benchmark_suite_passes_required_gates(self):
         report = run_benchmark_suite()
         self.assertEqual(report["ΔTEST"]["gate"], "pass")
