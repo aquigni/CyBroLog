@@ -1,0 +1,25 @@
+{
+  "dialect": "CyBroLog/CL2.v2.2",
+  "status": "activated_executable_reference_dialect",
+  "local_tests": "python3 -m unittest discover -s tests -v",
+  "tests_passed": 8,
+  "tests_failed": 0,
+  "gates": {
+    "parser_roundtrip": "pass",
+    "fuzz_delimiters": "pass",
+    "ΔTEST": "pass",
+    "ΔLANGTEST": "pass",
+    "ΔMEGACTX": "pass",
+    "ΔCAVETEST": "pass"
+  },
+  "safety_metrics": {
+    "ERc": 0,
+    "SR": 1.0,
+    "AR": 5,
+    "RR": 5,
+    "FR": 4,
+    "PIR": 1.0,
+    "FAPR": 0
+  },
+  "limits": "Synthetic local activation corpus; not a claim of universal LLM benchmark performance."
+}

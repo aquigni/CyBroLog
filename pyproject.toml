@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cybrolog"
+version = "2.2.0"
+description = "CyBroLog: executable compact accountability language for multi-agent coordination"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [{name = "Chthonya and Mac0sh, for Alexander/H0st"}]
+
+[project.scripts]
+cybrolog = "cybrolog.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
