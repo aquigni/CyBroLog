@@ -136,7 +136,7 @@ def _field_order(fields: dict[str, Any]) -> list[str]:
     preferred = [
         "authn", "mc", "plane", "lan", "tok", "task", "ctxgraph", "focus",
         "obj", "obj:module", "obj:channel", "obj:payload_ref", "obj:quoted_text", "obj:note",
-        "ans", "η", "ο", "γ", "ε", "search", "agg", "cmp", "zone", "val", "fix", "mcmp", "rb", "χ", "may", "π", "pi", "anchor", "ckpt", "out"
+        "ans", "η", "ο", "γ", "ε", "search", "agg", "vld", "cmp", "zone", "val", "fix", "mcmp", "rb", "χ", "may", "π", "pi", "anchor", "ckpt", "out"
     ]
     return [k for k in preferred if k in fields] + sorted(k for k in fields if k not in preferred)
 

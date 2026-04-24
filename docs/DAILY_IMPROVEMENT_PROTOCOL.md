@@ -21,7 +21,7 @@ This protocol governs the sisters' daily CyBroLog improvement cron.
 3. **External discovery and triage second**
    - In the same cron run, if time and budget remain, search and triage external sources slowly rather than rushing implementation.
    - Sources include GitHub, arXiv, Semantic Scholar, Science/Nature-like journals and repositories, and later H0st-approved source lists.
-   - Topic scope includes A2A, agent protocols, optimization, linguistics, synthetic/philosophical languages such as Ithkuil/Iţkuîl, formal semantics, new philosophical concepts, non-trivial mathematical solutions, ML/LLM systems, proof-carrying authorization, distributed logs, protocol parsers, eval harnesses, and compact notation systems.
+   - Topic scope includes A2A, agent protocols, optimization, linguistics, synthetic/philosophical languages such as Ithkuil/Iţkuîl and Iláksh, formal semantics, new philosophical concepts, non-trivial mathematical solutions, ML/LLM systems, proof-carrying authorization, distributed logs, protocol parsers, eval harnesses, and compact notation systems.
    - Rank candidates by relevance, novelty, implementability, evidence quality, and safety impact.
    - Extract structural mechanisms, not decorative terminology.
    - Map candidates to possible CyBroLog grammar, AST, policy, eval, codec, or documentation changes.

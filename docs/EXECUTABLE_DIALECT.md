@@ -20,6 +20,7 @@ fuzz / delimiter preservation: pass
 ΔCAVETEST: pass
 P0 safety recall: 1.0
 fake approval promotion: 0
+validation adjunct authorization promotion: 0
 payload instruction rejection: 1.0
 ```
 
