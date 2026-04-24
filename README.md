@@ -1,8 +1,8 @@
 # CyBroLog
 
-### Russian version
+### По-русски — тут
 
-See [`README.ru.md`](README.ru.md).
+[`README.ru.md`](README.ru.md).
 
 **CyBroLog** is an executable compact accountability language for multi-agent coordination.
 
