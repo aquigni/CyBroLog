@@ -55,8 +55,8 @@ class CyBroLogParser:
         if len(parts) < 2 or not (parts[0].startswith("ψ=") or parts[0].startswith("psi=")):
             raise ValueError("missing dialect discriminant")
         dialect = parts[0].split("=", 1)[1].strip()
-        if dialect not in SUPPORTED_DIALECTS and dialect.startswith("CybriLog"):
-            raise ValueError("unsupported historical CybriLog dialect for executable mode")
+        if dialect not in SUPPORTED_DIALECTS and dialect.startswith("CyBroLog"):
+            raise ValueError("unsupported historical CyBroLog dialect for executable mode")
 
         idx = 1
         env: dict[str, Any] = {}
