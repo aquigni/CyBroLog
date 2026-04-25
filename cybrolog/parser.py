@@ -136,7 +136,7 @@ def _field_order(fields: dict[str, Any]) -> list[str]:
     preferred = [
         "authn", "mc", "plane", "lan", "tok", "task", "ctxgraph", "focus",
         "obj", "obj:module", "obj:channel", "obj:payload_ref", "obj:quoted_text", "obj:note",
-        "ans", "η", "ο", "γ", "ε", "search", "agg", "cmp", "zone", "val", "fix", "mcmp", "rb", "χ", "may", "π", "pi", "anchor", "ckpt", "out"
+        "ans", "η", "ο", "γ", "ε", "search", "agg", "vld", "cmp", "zone", "val", "fix", "mcmp", "rb", "χ", "may", "π", "pi", "anchor", "ckpt", "out"
     ]
     return [k for k in preferred if k in fields] + sorted(k for k in fields if k not in preferred)
 
@@ -144,9 +144,10 @@ def _field_order(fields: dict[str, Any]) -> list[str]:
 def _split_top(text: str, sep: str) -> list[str]:
     parts: list[str] = []
     buf: list[str] = []
-    depth = 0
+    stack: list[str] = []
     quote = False
     escape = False
+    pairs = {"}": "{", "]": "["}
     for ch in text:
         if escape:
             buf.append(ch); escape = False; continue
@@ -155,11 +156,17 @@ def _split_top(text: str, sep: str) -> list[str]:
         if ch == '"':
             quote = not quote; buf.append(ch); continue
         if not quote:
-            if ch in "{[": depth += 1
-            elif ch in "}]" and depth > 0: depth -= 1
-            elif ch == sep and depth == 0:
+            if ch in "{[":
+                stack.append(ch)
+            elif ch in "}]":
+                if not stack or stack[-1] != pairs[ch]:
+                    raise ValueError("unbalanced_delimiter_or_quote")
+                stack.pop()
+            elif ch == sep and not stack:
                 parts.append("".join(buf)); buf = []; continue
         buf.append(ch)
+    if quote or stack:
+        raise ValueError("unbalanced_delimiter_or_quote")
     parts.append("".join(buf))
     return parts
 
