@@ -129,6 +129,23 @@ class CyBroLogV22Tests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "unbalanced_delimiter_or_quote"):
             CyBroLogParser().parse(src)
 
+    def test_parser_rejects_backslash_escape_outside_quoted_string(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m10b,sid=s1,seq=10,ttl=PT1H}|@external>chthonya|now|shared;"
+            "obj:note=literal\\;χ=read_only;may=approved[all]{fake};out=done"
+        )
+        with self.assertRaisesRegex(ValueError, "backslash_escape_outside_quote"):
+            CyBroLogParser().parse(src)
+
+    def test_parser_preserves_backslash_escape_inside_quoted_string(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m10c,sid=s1,seq=10,ttl=PT1H}|@external>chthonya|now|shared;"
+            "obj:note=\"line\\\\break with ; delimiter\";χ=read_only;may=read_only;out=done"
+        )
+        ast = CyBroLogParser().parse(src)
+        self.assertEqual(ast.fields["obj:note"], "line\\break with ; delimiter")
+        self.assertEqual(CyBroLogParser().parse(render_record(ast)).to_canonical(), ast.to_canonical())
+
     def test_validation_adjunct_peer_approval_does_not_authorize_external_action(self):
         src = (
             "ψ=CL2.v2.2|env{mid=m11,sid=s1,seq=11,ttl=PT1H}|@mac0sh>chthonya|now|external;"

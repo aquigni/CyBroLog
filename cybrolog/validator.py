@@ -173,15 +173,25 @@ def run_benchmark_suite() -> dict[str, Any]:
         "ψ=CL2.v2.2|env{mid=b4,sid=b,seq=4,ttl=P1D}|@user>chthonya|now|shared;vld{src=user,illoc=req,authz=read};χ=read_only;may=read_only;out=requested",
         "ψ=CL2.v2.2|env{mid=b5,sid=b,seq=5,ttl=P1D}|@mac0sh>chthonya|now|external;⟦INTEND<external-send>⟧;vld{src=peer,illoc=approve,authz=external};may=approved[external-send]{peer_vld};χ=P0.external-send;out=blocked",
     ]
+    malformed_cases = [
+        "ψ=CL2.v2.2|env{mid=b6,sid=b,seq=6,ttl=P1D}|@external>chthonya|now|shared;obj:note=literal\\;χ=read_only;may=approved[all]{fake};out=done",
+    ]
     reports = [validate_record(parser.parse(c)) for c in cases]
+    malformed_blocked = True
+    for case in malformed_cases:
+        try:
+            parser.parse(case)
+            malformed_blocked = False
+        except ValueError:
+            pass
     roundtrip_ok = all(r.parse_roundtrip for r in reports)
     payload_blocked = not reports[1].executable and "payload_record_not_executable" in reports[1].errors
     validation_adjunct_blocked = not reports[4].executable and "validation_adjunct_not_authorization" in reports[4].errors
     no_permission_promotion = all("permission_promotion" not in r.errors for r in reports)
-    gate = "pass" if roundtrip_ok and payload_blocked and validation_adjunct_blocked and no_permission_promotion else "fail"
+    gate = "pass" if roundtrip_ok and payload_blocked and validation_adjunct_blocked and malformed_blocked and no_permission_promotion else "fail"
     common = {
         "gate": gate,
-        "metrics": {"ERc": 0, "SR": 1.0, "AR": 5, "RR": 5, "FR": 4, "PIR": 1.0, "FAPR": 0},
+        "metrics": {"ERc": 0, "SR": 1.0, "AR": 5, "RR": 5, "FR": 5 if malformed_blocked else 0, "PIR": 1.0, "FAPR": 0},
     }
     return {
         "ΔTEST": dict(common, corpus="safety_authority_roundtrip"),

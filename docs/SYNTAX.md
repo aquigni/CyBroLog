@@ -34,7 +34,7 @@ Values containing `; | = : [ ] { } "` or newlines must be JSON strings.
 obj:note="a;b|c=d [x] {y}: z"
 ```
 
-The reference parser preserves these through round-trip.
+The reference parser preserves these through round-trip. Backslash escaping is only valid inside JSON strings. A backslash outside a quoted string is rejected fail-closed, rather than being allowed to hide or merge field delimiters.
 
 ## Validation adjunct `vld{}`
 
