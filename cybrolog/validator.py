@@ -113,13 +113,29 @@ def _has_verified_natural_language_user_approval(evidence: Any, required_scopes:
             continue
         if (
             source == "user"
-            and kind in {"user_approval", "natural_language_user_approval"}
+            and _canonical_user_approval_kind(kind) is not None
             and verified is True
             and isinstance(scope, str)
             and scope in required_scopes
         ):
             approved_scopes.add(scope)
     return required_scopes.issubset(approved_scopes)
+
+
+def _canonical_user_approval_kind(kind: Any) -> str | None:
+    """Normalize verified user-approval evidence kind names.
+
+    Hyphenated spellings are canonical for CyBroLog v2.2. Underscore spellings
+    remain accepted as legacy aliases so older reviewable records stay
+    backward-readable, but arbitrary substrings still fail closed.
+    """
+    aliases = {
+        "user-approval": "user-approval",
+        "natural-language-user-approval": "natural-language-user-approval",
+        "user_approval": "user-approval",
+        "natural_language_user_approval": "natural-language-user-approval",
+    }
+    return aliases.get(kind) if isinstance(kind, str) else None
 
 
 def _required_approval_scopes(record: CyBroLogRecord) -> set[str]:

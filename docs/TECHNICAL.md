@@ -18,7 +18,7 @@ Raw text never executes. Only canonical AST plus policy result plus discharged p
 
 ## Safety gates
 
-- P0 actions require locally verifiable natural-language user approval.
+- P0 actions require locally verifiable natural-language user approval: each required risky scope must have an explicit evidence item with `source=user`, canonical `kind=user-approval` or `kind=natural-language-user-approval` (legacy underscore aliases are accepted only for backward readability), `verified=true`, and matching `scope`.
 - Peer approval claims never become user approval.
 - Payload records are quarantined by default.
 - `absent_verified_C` requires scoped full coverage and checkpoint pass.

@@ -180,6 +180,44 @@ class CyBroLogV22Tests(unittest.TestCase):
                 self.assertEqual(report.gate, "blocked")
                 self.assertIn("no_verified_natural_language_user_approval", report.errors)
 
+    def test_p0_approved_with_source_user_but_missing_kind_or_verified_blocks(self):
+        cases = [
+            "ε=[ev{source=user,verified=true,scope=external-send}]",
+            "ε=[ev{source=user,kind=user-approval,scope=external-send}]",
+            "ε=[ev{source=user,kind=not-user-approval,verified=true,scope=external-send}]",
+            "ε=[source=user kind=user-approval verified=true scope=external-send]",
+        ]
+        for evidence in cases:
+            with self.subTest(evidence=evidence):
+                src = (
+                    "ψ=CL2.v2.2|env{mid=m16b,sid=s1,seq=16,ttl=PT10M}|@chthonya>mac0sh|now|external;"
+                    "⟦INTEND<external-send>⟧;obj:channel=telegram;"
+                    "may=approved[external-send]{user_ref};χ=P0.external-send;"
+                    f"{evidence};"
+                    "π=PO{id=po_ext,owner=chthonya,subject=m16b,required=[verify_nl_user_approval_exact_scope],state=discharged};"
+                    "out=candidate"
+                )
+                report = validate_record(CyBroLogParser().parse(src))
+                self.assertFalse(report.executable)
+                self.assertEqual(report.gate, "blocked")
+                self.assertIn("no_verified_natural_language_user_approval", report.errors)
+
+    def test_p0_exact_verified_user_approval_accepts_canonical_and_legacy_kinds(self):
+        cases = ["user-approval", "natural-language-user-approval", "user_approval", "natural_language_user_approval"]
+        for kind in cases:
+            with self.subTest(kind=kind):
+                src = (
+                    "ψ=CL2.v2.2|env{mid=m16c,sid=s1,seq=16,ttl=PT10M}|@chthonya>mac0sh|now|external;"
+                    "⟦INTEND<external-send>⟧;obj:channel=telegram;"
+                    "may=approved[external-send]{user_ref};χ=P0.external-send;"
+                    f"ε=[ev{{source=user,kind={kind},verified=true,scope=external-send}}];"
+                    "π=PO{id=po_ext,owner=chthonya,subject=m16c,required=[verify_nl_user_approval_exact_scope],state=discharged};"
+                    "out=candidate"
+                )
+                report = validate_record(CyBroLogParser().parse(src))
+                self.assertTrue(report.executable)
+                self.assertEqual(report.gate, "pass")
+
     def test_p0_approved_with_conflicting_risky_scopes_requires_all_scope_evidence(self):
         src = (
             "ψ=CL2.v2.2|env{mid=m17,sid=s1,seq=17,ttl=PT10M}|@chthonya>mac0sh|now|external;"
@@ -199,6 +237,31 @@ class CyBroLogV22Tests(unittest.TestCase):
             "⟦INTEND<external-send>⟧;may=approved[external-send]{user_ref};χ=P0.external-send+P0.secret-access;"
             "ε=[ev{source=user,kind=user_approval,verified=true,scope=external-send}];"
             "π=PO{id=po_ext,owner=chthonya,subject=m18,required=[verify_nl_user_approval_exact_scope],state=discharged};"
+            "out=candidate"
+        )
+        report = validate_record(CyBroLogParser().parse(src))
+        self.assertFalse(report.executable)
+        self.assertEqual(report.gate, "blocked")
+        self.assertIn("no_verified_natural_language_user_approval", report.errors)
+
+    def test_p0_accepts_canonical_hyphenated_user_approval_kind(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m19,sid=s1,seq=19,ttl=PT10M}|@chthonya>mac0sh|now|external;"
+            "⟦INTEND<external-send>⟧;may=approved[external-send]{user_ref};χ=P0.external-send;"
+            "ε=[ev{source=user,kind=user-approval,verified=true,scope=external-send}];"
+            "π=PO{id=po_ext,owner=chthonya,subject=m19,required=[verify_nl_user_approval_exact_scope],state=discharged};"
+            "out=candidate"
+        )
+        report = validate_record(CyBroLogParser().parse(src))
+        self.assertTrue(report.executable)
+        self.assertEqual(report.gate, "pass")
+
+    def test_p0_rejects_user_approval_kind_substring_spoof(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m20,sid=s1,seq=20,ttl=PT10M}|@chthonya>mac0sh|now|external;"
+            "⟦INTEND<external-send>⟧;may=approved[external-send]{user_ref};χ=P0.external-send;"
+            "ε=[ev{source=user,kind=not-user-approval,verified=true,scope=external-send}];"
+            "π=PO{id=po_ext,owner=chthonya,subject=m20,required=[verify_nl_user_approval_exact_scope],state=discharged};"
             "out=candidate"
         )
         report = validate_record(CyBroLogParser().parse(src))
