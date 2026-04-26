@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import re
 from typing import Any
 
 from .parser import CyBroLogParser, CyBroLogRecord, render_record
@@ -75,13 +76,80 @@ def _validate_p0(record: CyBroLogRecord, errors: list[str]) -> None:
     if not risky:
         return
     may = str(record.fields.get("may", ""))
-    evidence = str(record.fields.get("ε", ""))
     if "approved" in may:
-        if "user_approval" not in evidence and "source=user" not in evidence:
+        if not _has_verified_natural_language_user_approval(record.fields.get("ε"), _required_approval_scopes(record)):
             errors.append("peer_claim_not_user_approval")
             errors.append("no_verified_natural_language_user_approval")
     else:
         errors.append("needs_user_approval")
+
+
+def _has_verified_natural_language_user_approval(evidence: Any, required_scopes: set[str]) -> bool:
+    """Return true only for explicit, verified, exact-scope user approval evidence.
+
+    Substrings such as `source=user` or `user_approval` are insufficient: P0
+    approval must be represented as a distinct evidence item with user source,
+    user-approval kind, verified=true, and a scope matching the risky action.
+    The current parser keeps adjunct-like list items as strings, so this helper
+    accepts only the conservative `ev{...}` evidence shape and fails closed for
+    malformed/partial claims.
+    """
+    if not required_scopes:
+        return False
+    items = evidence if isinstance(evidence, list) else [evidence]
+    approved_scopes: set[str] = set()
+    for item in items:
+        if isinstance(item, dict):
+            source = item.get("source")
+            kind = item.get("kind")
+            verified = item.get("verified")
+            scope = item.get("scope")
+        elif isinstance(item, str) and item.startswith("ev{") and item.endswith("}"):
+            source = _extract_ev_attr(item, "source")
+            kind = _extract_ev_attr(item, "kind")
+            verified = _extract_ev_attr(item, "verified")
+            scope = _extract_ev_attr(item, "scope")
+        else:
+            continue
+        if (
+            source == "user"
+            and kind in {"user_approval", "natural_language_user_approval"}
+            and verified is True
+            and isinstance(scope, str)
+            and scope in required_scopes
+        ):
+            approved_scopes.add(scope)
+    return required_scopes.issubset(approved_scopes)
+
+
+def _required_approval_scopes(record: CyBroLogRecord) -> set[str]:
+    scopes: set[str] = set()
+    may = str(record.fields.get("may", ""))
+    if "approved[" in may and "]" in may:
+        scopes.add(may.split("approved[", 1)[1].split("]", 1)[0])
+    chi = str(record.fields.get("χ", ""))
+    for scope in re.findall(r"P0\.([A-Za-z0-9_-]+)", chi):
+        scopes.add(scope)
+    for atom in record.atoms:
+        if atom.startswith("⟦INTEND<") and ">" in atom:
+            scopes.add(atom.split("⟦INTEND<", 1)[1].split(">", 1)[0])
+    return {scope for scope in scopes if scope}
+
+
+def _extract_ev_attr(item: str, key: str) -> Any:
+    prefix = key + "="
+    inner = item[3:-1]
+    for part in inner.split(","):
+        part = part.strip()
+        if not part.startswith(prefix):
+            continue
+        raw = part[len(prefix):].strip()
+        if raw == "true":
+            return True
+        if raw == "false":
+            return False
+        return raw.strip('"')
+    return None
 
 
 def _validate_compression(record: CyBroLogRecord, errors: list[str]) -> None:
