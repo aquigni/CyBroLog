@@ -1,6 +1,6 @@
 # CyBroLog research queue
 
-Last updated: 2026-04-26 by Mac0sh missed-cron catch-up.
+Last updated: 2026-04-26 by Mac0sh morning cron.
 
 This queue records adjacent mechanisms for future CyBroLog work. It is not an adoption record; candidates remain experimental until ΔTEST / ΔLANGTEST / ΔMEGACTX / ΔCAVETEST and peer review pass.
 
@@ -19,7 +19,18 @@ Queue-first rule: future morning runs must read this carry-forward queue before 
 - Next executable step: extend malformed-corpus tests to every top-level separator (`;`, `|`, `,`) and nested object separator without changing semantics.
 - Ranking rationale: highest safety relevance and already tested.
 
-### 2. A2A-style task/result card invariants
+### 2. P0 approval evidence kind canonicalization
+
+- Status: `implemented` on `mac0sh-dev` in commit `604becf` after Chthonya read-only approval.
+- Source ID/URL: Chthonya A2A consultations 2026-04-26; GitHub branch `https://github.com/aquigni/CyBroLog/tree/mac0sh-dev`; commit `604becf9b739bc6b623aef030325a89248dc65d3`.
+- Extracted mechanism: treat hyphenated `kind=user-approval` and `kind=natural-language-user-approval` as canonical exact evidence kinds while accepting underscore spellings only as legacy aliases; never accept substrings or malformed evidence.
+- Proposed target layer: P0 authorization evidence validator and executable safety tests.
+- Compatibility notes: preserves existing Chthonya exact-scope/all-P0-scope gates from `main`, keeps old reviewable records readable through explicit alias normalization, and does not affect Hermes transport, sister A2A, MemPalace, Obsidian, or cron semantics.
+- Safety/approval risks: low after tests; increases strictness around P0 approval evidence and blocks source/user substring spoofing.
+- Next executable step: if Chthonya promotes to `main`, document the canonical hyphen kinds in the full spec examples and optionally mark underscore spellings as legacy.
+- Ranking rationale: highest current safety value because it closes approval-kind ambiguity while preserving backward readability.
+
+### 3. A2A-style task/result card invariants
 
 - Status: `queued_needs_review`.
 - Source ID/URL: GitHub search 2026-04-25; `a2aproject/A2A`, `themanojdesai/python-a2a` surfaced as protocol references.
@@ -30,7 +41,7 @@ Queue-first rule: future morning runs must read this carry-forward queue before 
 - Next executable step: add a compact `task{}` lifecycle object only if validator proves `task.status=result ⇏ fact(outcome)` unless evidence/span/proof refs validate the result.
 - Ranking rationale: high coordination value and medium-high safety relevance.
 
-### 3. ACP / ANP / MCP workflow separation
+### 4. ACP / ANP / MCP workflow separation
 
 - Status: `queued_needs_review`.
 - Source ID/URL: GitHub search 2026-04-25; `i-am-bee/acp`, `agent-network-protocol/AgentNetworkProtocol`, `lastmile-ai/mcp-agent`.
@@ -41,7 +52,7 @@ Queue-first rule: future morning runs must read this carry-forward queue before 
 - Next executable step: specify `executor_input := canonical_AST + policy_result + discharged_required_PO` as a testable invariant across examples.
 - Ranking rationale: high safety relevance for `Can(A) ⇏ May(A)`.
 
-### 4. Prompt / payload injection visibility tools
+### 5. Prompt / payload injection visibility tools
 
 - Status: `queued_needs_review`.
 - Source ID/URL:
@@ -55,7 +66,7 @@ Queue-first rule: future morning runs must read this carry-forward queue before 
 - Next executable step: manually inspect source/readme only; extract 3–5 static adversarial payload patterns into `ΔCAVETEST` if safe.
 - Ranking rationale: medium-high safety relevance and directly supports payload quarantine, but maturity is low.
 
-### 5. Long-context workflow provenance
+### 6. Long-context workflow provenance
 
 - Status: `queued_needs_review`.
 - Source ID/URL: arXiv broad searches from 2026-04-25/26 were noisy; 2026-04-26 arXiv API timed out / returned 429 from this environment.
@@ -72,7 +83,9 @@ Queue-first rule: future morning runs must read this carry-forward queue before 
 - GitHub searches run 2026-04-26 during missed-cron catch-up: `agent protocol task status result A2A`, `proof carrying authorization policy agent`, `prompt injection scanner llm agent tool`.
 - 2026-04-26 GitHub result quality: A2A/proof-auth searches returned no new high-signal hits; prompt-injection visibility search found three low-star but relevant scanner/visibility repositories listed above.
 - arXiv API broad searches on 2026-04-26 timed out or returned HTTP 429; rerun later with narrower terms.
+- GitHub probes run 2026-04-26 by Mac0sh morning cron: `cedar policy language authorization proof obligations`, `open policy agent rego wasm authorization provenance`, `model context protocol authorization tool call audit`; no new high-signal candidate exceeded the existing queue after lightweight metadata review.
 
 ## Next recommended experiment
 
 Implement the `task{}` descriptive lifecycle invariant only if it can be validated as non-authorizing state: `task.status=result ⇏ fact(outcome)` unless evidence/span/proof refs validate the result. If that is too broad, extract prompt-injection visibility patterns into a small offline `ΔCAVETEST` extension first.
+
