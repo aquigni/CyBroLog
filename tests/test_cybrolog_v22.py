@@ -176,6 +176,19 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertEqual(report.gate, "blocked")
         self.assertIn("no_verified_natural_language_user_approval", report.errors)
 
+    def test_p0_multi_scope_chi_requires_user_evidence_for_every_p0_scope(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m18,sid=s1,seq=18,ttl=PT10M}|@chthonya>mac0sh|now|external;"
+            "⟦INTEND<external-send>⟧;may=approved[external-send]{user_ref};χ=P0.external-send+P0.secret-access;"
+            "ε=[ev{source=user,kind=user_approval,verified=true,scope=external-send}];"
+            "π=PO{id=po_ext,owner=chthonya,subject=m18,required=[verify_nl_user_approval_exact_scope],state=discharged};"
+            "out=candidate"
+        )
+        report = validate_record(CyBroLogParser().parse(src))
+        self.assertFalse(report.executable)
+        self.assertEqual(report.gate, "blocked")
+        self.assertIn("no_verified_natural_language_user_approval", report.errors)
+
     def test_validation_adjunct_peer_approval_does_not_authorize_external_action(self):
         src = (
             "ψ=CL2.v2.2|env{mid=m11,sid=s1,seq=11,ttl=PT1H}|@mac0sh>chthonya|now|external;"

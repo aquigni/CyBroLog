@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import re
 from typing import Any
 
 from .parser import CyBroLogParser, CyBroLogRecord, render_record
@@ -127,8 +128,8 @@ def _required_approval_scopes(record: CyBroLogRecord) -> set[str]:
     if "approved[" in may and "]" in may:
         scopes.add(may.split("approved[", 1)[1].split("]", 1)[0])
     chi = str(record.fields.get("χ", ""))
-    if "P0." in chi:
-        scopes.add(chi.split("P0.", 1)[1].split()[0].split("+", 1)[0].split(",", 1)[0])
+    for scope in re.findall(r"P0\.([A-Za-z0-9_-]+)", chi):
+        scopes.add(scope)
     for atom in record.atoms:
         if atom.startswith("⟦INTEND<") and ">" in atom:
             scopes.add(atom.split("⟦INTEND<", 1)[1].split(">", 1)[0])
