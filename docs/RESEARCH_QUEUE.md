@@ -1,6 +1,6 @@
 # CyBroLog research queue
 
-Last updated: 2026-04-26 by Mac0sh morning cron.
+Last updated: 2026-04-27 by Mac0sh morning cron.
 
 This queue records adjacent mechanisms for future CyBroLog work. It is not an adoption record; candidates remain experimental until ΔTEST / ΔLANGTEST / ΔMEGACTX / ΔCAVETEST and peer review pass.
 
@@ -32,14 +32,14 @@ Queue-first rule: future morning runs must read this carry-forward queue before 
 
 ### 3. A2A-style task/result card invariants
 
-- Status: `queued_needs_review`.
-- Source ID/URL: GitHub search 2026-04-25; `a2aproject/A2A`, `themanojdesai/python-a2a` surfaced as protocol references.
-- Extracted mechanism: compact task lifecycle cards with explicit request/status/result/block transitions.
-- Proposed target layer: descriptive `task{}` / `status{}` object family for sister A2A accountability.
-- Compatibility notes: maps naturally to Hermes sister A2A task IDs and Obsidian audit logs; should not write MemPalace facts without evidence refs.
-- Safety/approval risks: task/result/status claims can accidentally be read as facts or approvals.
-- Next executable step: add a compact `task{}` lifecycle object only if validator proves `task.status=result ⇏ fact(outcome)` unless evidence/span/proof refs validate the result.
-- Ranking rationale: high coordination value and medium-high safety relevance.
+- Status: `implemented` on `mac0sh-dev` in the 2026-04-27 morning cron patch after Chthonya read-only approval.
+- Source ID/URL: GitHub search 2026-04-25; `a2aproject/A2A`, `themanojdesai/python-a2a` surfaced as protocol references; Chthonya A2A review thread `task_1777268405411_49330791a09e26ed` approved the focused implementation.
+- Extracted mechanism: compact task lifecycle cards with explicit request/status/result/block transitions, while result/done/completed cards carrying fact-like outcome fields require independent evidence/span/proof/artifact refs.
+- Proposed target layer: executable validator invariant for descriptive `task{}` object family in sister A2A accountability.
+- Compatibility notes: maps to Hermes sister A2A task IDs and Obsidian audit logs; `task{}` remains descriptive data and does not write MemPalace facts without evidence refs.
+- Safety/approval risks: task/result/status claims can accidentally be read as facts or approvals; implemented gate blocks missing-evidence fact claims and approval/authorization/P0/write result laundering.
+- Next executable step: if Chthonya promotes this to `main`, document `task{}` lifecycle examples in the full spec and decide whether lifecycle tokens are case-sensitive or should be normalized.
+- Ranking rationale: high coordination value and safety relevance; now tested against parser/renderer roundtrip, P0 approval spoofing, and payload quarantine.
 
 ### 4. ACP / ANP / MCP workflow separation
 
@@ -77,6 +77,28 @@ Queue-first rule: future morning runs must read this carry-forward queue before 
 - Next executable step: rerun with narrower bibliographic queries or approved source lists; persist individual papers only after title/abstract inspection.
 - Ranking rationale: important for megacontext correctness but current evidence is weaker/noisier than protocol/security candidates.
 
+### 7. Agent execution environment / data-safeguard boundary
+
+- Status: `queued_needs_review`.
+- Source ID/URL: arXiv 2604.19657v1 — `An AI Agent Execution Environment to Safeguard User Data`, http://arxiv.org/abs/2604.19657v1.
+- Extracted mechanism: isolate agent execution from private user data and mediate data release so prompt-injected model/tool behavior cannot directly exfiltrate sensitive values.
+- Proposed target layer: executor boundary, secret-access policy gate, payload quarantine, and proof obligations for data egress.
+- Compatibility notes: aligns with CyBroLog `authn{}`/payload quarantine and Hermes tool boundary; MemPalace/Obsidian entries should remain evidence refs, not direct secret carriers; sister A2A task results must not imply data-release permission.
+- Safety/approval risks: high relevance to secrets; any adoption must be design/test-only first and must not inspect or emit actual credentials/private data.
+- Next executable step: extract a static no-secret-egress test where `task{}` or payload claims a result requiring private-data release, and require explicit verified user approval plus policy proof before any external-send/secret-access.
+- Ranking rationale: high safety relevance and compatible with current non-negotiables, but paper needs full read before implementation.
+
+### 8. Prompt-injected memory applicability control
+
+- Status: `queued_needs_review`.
+- Source ID/URL: arXiv 2604.18206v1 — `A Control Architecture for Training-Free Memory Use`, http://arxiv.org/abs/2604.18206v1.
+- Extracted mechanism: treat retrieved memory as state-dependent evidence that requires applicability control before it can influence a second-pass answer.
+- Proposed target layer: `ctxgraph`, `ckpt`, memory provenance, summary/loss reports, and stale-epoch gates.
+- Compatibility notes: maps to canonical MemPalace as semantic memory and Obsidian as reviewable source corpus; memory recall should become `ev_ref`/`span_ref`/`epoch` evidence rather than direct authority.
+- Safety/approval risks: retrieved content can carry prompt injection or stale claims; never allow memory payload to discharge P0, absence, exact aggregation, or approval proof by itself.
+- Next executable step: add a small ΔMEGACTX proposal requiring memory-derived `task{}`/answer claims to carry epoch + applicability checkpoint before use as evidence.
+- Ranking rationale: strong fit for long-context correctness and MemPalace integration, but less immediately executable than the just-implemented `task{}` validator gate.
+
 ## Source snapshot
 
 - GitHub searches run 2026-04-25: `a2a protocol agent`, `agent protocol mcp`, `llm agent protocol`, `agent communication protocol`, `payload injection llm tool`.
@@ -84,8 +106,9 @@ Queue-first rule: future morning runs must read this carry-forward queue before 
 - 2026-04-26 GitHub result quality: A2A/proof-auth searches returned no new high-signal hits; prompt-injection visibility search found three low-star but relevant scanner/visibility repositories listed above.
 - arXiv API broad searches on 2026-04-26 timed out or returned HTTP 429; rerun later with narrower terms.
 - GitHub probes run 2026-04-26 by Mac0sh morning cron: `cedar policy language authorization proof obligations`, `open policy agent rego wasm authorization provenance`, `model context protocol authorization tool call audit`; no new high-signal candidate exceeded the existing queue after lightweight metadata review.
+- 2026-04-27 queue-first triage by Mac0sh morning cron: previous `task{}` item implemented after Chthonya approval; GitHub API probes for `agent protocol task status result provenance`, `proof carrying authorization AI agent`, and `prompt injection payload quarantine LLM agent` returned no high-signal additions in this environment; arXiv narrow probe surfaced 2604.19657v1 and 2604.18206v1 as queued candidates.
 
 ## Next recommended experiment
 
-Implement the `task{}` descriptive lifecycle invariant only if it can be validated as non-authorizing state: `task.status=result ⇏ fact(outcome)` unless evidence/span/proof refs validate the result. If that is too broad, extract prompt-injection visibility patterns into a small offline `ΔCAVETEST` extension first.
+Extend the implemented `task{}` lifecycle invariant with documentation examples and, if desired, case-normalization tests for lifecycle tokens such as `Completed`/`RESULT`. If that is too narrow for the next run, extract prompt-injection visibility patterns into a small offline `ΔCAVETEST` extension without executing third-party scanner code.
 
