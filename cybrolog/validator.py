@@ -227,7 +227,8 @@ def _validate_task_lifecycle(record: CyBroLogRecord, errors: list[str]) -> None:
         return
 
     status = task.get("status") or task.get("state")
-    if status not in {"result", "done", "completed"}:
+    status_token = str(status).casefold() if status is not None else ""
+    if status_token not in {"result", "done", "completed"}:
         return
 
     fact_like_keys = {"outcome", "result", "claim", "asserts", "effect"}
