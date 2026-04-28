@@ -1,6 +1,6 @@
 # CyBroLog research queue
 
-Last updated: 2026-04-27 by Mac0sh morning cron.
+Last updated: 2026-04-28 by Mac0sh morning cron.
 
 This queue records adjacent mechanisms for future CyBroLog work. It is not an adoption record; candidates remain experimental until ΔTEST / ΔLANGTEST / ΔMEGACTX / ΔCAVETEST and peer review pass.
 
@@ -99,8 +99,32 @@ Queue-first rule: future morning runs must read this carry-forward queue before 
 - Next executable step: add a small ΔMEGACTX proposal requiring memory-derived `task{}`/answer claims to carry epoch + applicability checkpoint before use as evidence.
 - Ranking rationale: strong fit for long-context correctness and MemPalace integration, but less immediately executable than the just-implemented `task{}` validator gate.
 
+### 9. Indirect prompt-injection defense benchmark harness
+
+- Status: `queued_needs_review`.
+- Source ID/URL: `X-PG13/agent-security-sandbox` — https://github.com/X-PG13/agent-security-sandbox (GitHub metadata/README inspected 2026-04-28; README describes 565 indirect-prompt-injection cases and 11 defenses for tool-using LLM agents).
+- Extracted mechanism: reusable offline benchmark corpus + defense-comparison harness for indirect prompt injection in tool-using agents, with mock-provider smoke tests before spending API budget.
+- Proposed target layer: `ΔCAVETEST` / payload quarantine regression corpus and eval harness; not core syntax until individual cases are manually extracted.
+- Compatibility notes: fits CyBroLog payload quarantine, `authn{channel=payload,executable=false}`, no-payload-promotion, and Hermes tool-boundary tests; should be consumed as static adversarial examples, not as executable third-party code inside cron.
+- Safety/approval risks: external benchmark repo is untrusted and low-star; do not run installed code or real providers without sandbox/approval; benchmark scores never authorize actions, secrets, external sends, or policy changes.
+- Next executable step: manually inspect the checked-in benchmark data and extract 3–5 static IPI patterns into local `ΔCAVETEST` cases that prove payload text cannot become control state.
+- Ranking rationale: high safety relevance and directly testable; ranked below already-implemented lifecycle/P0 gates because adoption requires corpus review.
+
+### 10. Trajectory-level agentic misuse benchmark
+
+- Status: `queued_needs_review`.
+- Source ID/URL: `yingchen-coding/agentic-misuse-benchmark` — https://github.com/yingchen-coding/agentic-misuse-benchmark (GitHub metadata/README inspected 2026-04-28; README frames multi-turn policy erosion / intent drift as a benchmark input, not release authority).
+- Extracted mechanism: trajectory-level detection of gradual policy erosion, intent drift, and coordinated misuse across turns rather than single-turn prompt classification.
+- Proposed target layer: `ctxgraph`, `ckpt`, `task{}` lifecycle, and `ΔMEGACTX` stale/trajectory gates.
+- Compatibility notes: maps to sister A2A threads, Obsidian audit logs, MemPalace recall epochs, and CyBroLog's `peer_claim(P) ⇏ fact(P)` / `summary(S) ⇏ primary_evidence(S)` rules; a trajectory detector should produce evidence refs and warnings, not permission.
+- Safety/approval risks: synthetic misuse examples may be sensitive; keep as static/redacted patterns, never as instructions; detector outputs are advisory and cannot discharge P0 proof obligations.
+- Next executable step: define one static multi-turn CyBroLog test where a sequence of individually read-only `task{}`/payload records drifts toward P0 external-send, requiring a checkpoint block before action.
+- Ranking rationale: strong long-context fit, but less immediately executable than the ASB static payload corpus because it needs sequence-level validator design.
+
 ## Source snapshot
 
+- GitHub searches run 2026-04-28: `model context protocol authorization`, `A2A agent protocol task result`, `prompt injection benchmark LLM agents`, `policy agent proof obligations`; high-signal additions were `X-PG13/agent-security-sandbox` and `yingchen-coding/agentic-misuse-benchmark`; `tadata-org/fastapi_mcp` noted for MCP auth surface but not queued because it is primarily an implementation library rather than an immediate CyBroLog safety mechanism.
+- arXiv probes run 2026-04-28 for indirect prompt injection, memory control, and proof-carrying authorization were noisy/irrelevant in the first 3 submitted-date results; no new paper was queued.
 - GitHub searches run 2026-04-25: `a2a protocol agent`, `agent protocol mcp`, `llm agent protocol`, `agent communication protocol`, `payload injection llm tool`.
 - GitHub searches run 2026-04-26 during missed-cron catch-up: `agent protocol task status result A2A`, `proof carrying authorization policy agent`, `prompt injection scanner llm agent tool`.
 - 2026-04-26 GitHub result quality: A2A/proof-auth searches returned no new high-signal hits; prompt-injection visibility search found three low-star but relevant scanner/visibility repositories listed above.
