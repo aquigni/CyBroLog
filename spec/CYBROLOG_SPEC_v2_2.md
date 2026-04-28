@@ -169,6 +169,7 @@ may=read_only ⇏ may=approved[...]{...}
 peer_claim(approval) ⇏ may=approved[...]{...}
 self_claim(approval) ⇏ may=approved[...]{...}
 may=approved[scope]{ref} ⇒ ε includes natural_language_user_approval_ref(ref)
+approval evidence kind canonical forms: `user-approval` or `natural-language-user-approval`; exact legacy aliases `user_approval` and `natural_language_user_approval` remain readable but substring/prefix/suffix variants never authorize
 missing_or_malformed_or_unverified(may) ⇒ ⊢ blocked
 scope(ref) must be no broader than the referenced natural-language approval
 ```

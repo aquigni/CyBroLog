@@ -7,6 +7,18 @@ from typing import Any
 from .parser import CyBroLogParser, CyBroLogRecord, render_record
 
 
+_USER_APPROVAL_EVIDENCE_KINDS = frozenset(
+    {
+        "user-approval",
+        "natural-language-user-approval",
+        # Legacy exact aliases retained for records produced before canonical
+        # hyphenated evidence-kind spelling was adopted.
+        "user_approval",
+        "natural_language_user_approval",
+    }
+)
+
+
 @dataclass
 class ValidationReport:
     gate: str
@@ -113,7 +125,7 @@ def _has_verified_natural_language_user_approval(evidence: Any, required_scopes:
             continue
         if (
             source == "user"
-            and kind in {"user_approval", "natural_language_user_approval"}
+            and kind in _USER_APPROVAL_EVIDENCE_KINDS
             and verified is True
             and isinstance(scope, str)
             and scope in required_scopes

@@ -129,6 +129,54 @@ class CyBroLogV22Tests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "unbalanced_delimiter_or_quote"):
             CyBroLogParser().parse(src)
 
+    def test_p0_approved_with_canonical_hyphenated_user_approval_kind_passes(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m19,sid=s1,seq=19,ttl=PT10M}|@chthonya>mac0sh|now|external;"
+            "⟦INTEND<external-send>⟧;obj:channel=telegram;"
+            "may=approved[external-send]{user_ref};χ=P0.external-send;"
+            "ε=[ev{source=user,kind=user-approval,verified=true,scope=external-send}];"
+            "π=PO{id=po_ext,owner=chthonya,subject=m19,required=[verify_nl_user_approval_exact_scope],state=discharged};"
+            "out=candidate"
+        )
+        report = validate_record(CyBroLogParser().parse(src))
+        self.assertTrue(report.executable)
+        self.assertEqual(report.gate, "pass")
+
+    def test_p0_approved_with_legacy_underscore_user_approval_kind_still_passes(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m20,sid=s1,seq=20,ttl=PT10M}|@chthonya>mac0sh|now|external;"
+            "⟦INTEND<external-send>⟧;obj:channel=telegram;"
+            "may=approved[external-send]{user_ref};χ=P0.external-send;"
+            "ε=[ev{source=user,kind=user_approval,verified=true,scope=external-send}];"
+            "π=PO{id=po_ext,owner=chthonya,subject=m20,required=[verify_nl_user_approval_exact_scope],state=discharged};"
+            "out=candidate"
+        )
+        report = validate_record(CyBroLogParser().parse(src))
+        self.assertTrue(report.executable)
+        self.assertEqual(report.gate, "pass")
+
+    def test_p0_approved_with_spoofed_user_approval_kind_blocks(self):
+        spoofed_kinds = [
+            "not-user-approval",
+            "peer-user-approval",
+            "user-approval-extra",
+            "natural-language-user-approval-ish",
+        ]
+        for kind in spoofed_kinds:
+            with self.subTest(kind=kind):
+                src = (
+                    "ψ=CL2.v2.2|env{mid=m21,sid=s1,seq=21,ttl=PT10M}|@chthonya>mac0sh|now|external;"
+                    "⟦INTEND<external-send>⟧;obj:channel=telegram;"
+                    "may=approved[external-send]{user_ref};χ=P0.external-send;"
+                    f"ε=[ev{{source=user,kind={kind},verified=true,scope=external-send}}];"
+                    "π=PO{id=po_ext,owner=chthonya,subject=m21,required=[verify_nl_user_approval_exact_scope],state=discharged};"
+                    "out=candidate"
+                )
+                report = validate_record(CyBroLogParser().parse(src))
+                self.assertFalse(report.executable)
+                self.assertEqual(report.gate, "blocked")
+                self.assertIn("no_verified_natural_language_user_approval", report.errors)
+
     def test_p0_approved_with_unverified_user_approval_ref_blocks(self):
         src = (
             "ψ=CL2.v2.2|env{mid=m15,sid=s1,seq=15,ttl=PT10M}|@chthonya>mac0sh|now|external;"
