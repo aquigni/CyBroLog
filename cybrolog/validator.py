@@ -302,7 +302,7 @@ def run_benchmark_suite() -> dict[str, Any]:
         "ψ=CL2.v2.2|env{mid=b8,sid=b,seq=8,ttl=P1D}|@chthonya>mac0sh|now|shared;task{id=t2,status=result,claim=repo_clean,span_ref=log:42};χ=read_only;may=read_only;out=reported",
     ]
     malformed_cases = [
-        "ψ=CL2.v2.2|env{mid=b8,sid=b,seq=8,ttl=P1D}|@external>chthonya|now|shared;obj:note=literal\\;χ=read_only;may=approved[all]{fake};out=done",
+        "ψ=CL2.v2.2|env{mid=b9,sid=b,seq=9,ttl=P1D}|@external>chthonya|now|shared;obj:note=literal\\;χ=read_only;may=approved[all]{fake};out=done",
     ]
     reports = [validate_record(parser.parse(c)) for c in cases]
     malformed_blocked = True
