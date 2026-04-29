@@ -1,12 +1,34 @@
 # CyBroLog research queue
 
-Last updated: 2026-04-28 by Mac0sh morning cron.
+Last updated: 2026-04-29 by Mac0sh morning cron.
 
 This queue records adjacent mechanisms for future CyBroLog work. It is not an adoption record; candidates remain experimental until ΔTEST / ΔLANGTEST / ΔMEGACTX / ΔCAVETEST and peer review pass.
 
 Queue-first rule: future morning runs must read this carry-forward queue before external search, rank old + new candidates together, and persist every triaged result that is not implemented immediately. Each queued item carries source ID/URL, extracted mechanism, proposed target layer, compatibility notes with CyBroLog/Hermes/sister A2A/MemPalace/Obsidian/cron systems, safety/approval risks, next executable step, ranking rationale, and status.
 
 ## Ranked candidates
+
+### 0. Provenance & Intent Contracts for action-bound proof
+
+- Status: `queued_needs_review`.
+- Source ID/URL: `madeinplutofabio/pic-standard` — https://github.com/madeinplutofabio/pic-standard; README inspected 2026-04-29.
+- Extracted mechanism: local-first action gating contract where an agent declares intent, impact, provenance, and evidence before high-impact tool execution; verifier fails closed when provenance/evidence is insufficient.
+- Proposed target layer: CyBroLog `π=PO{}` / executor-boundary policy result, especially `executor_input := canonical_AST + policy_result + discharged_required_PO`.
+- Compatibility notes: aligns with CyBroLog P0, Hermes tool execution, sister A2A approval scopes, and MemPalace/Obsidian as evidence stores only; should remain a conceptual/reference candidate until mapped to existing `may`, `χ`, `ε`, and `π` fields without importing new authority semantics.
+- Safety/approval risks: external protocol claims cannot authorize actions; signatures/hashes/evidence descriptors are proof inputs, not user approval; any integration must preserve `Can(A) ⇏ May(A)` and `peer_claim(approval) ⇏ user_approval`.
+- Next executable step: draft a tiny `pic{}`-inspired proof-obligation adapter in tests only: positive read-only action, blocked high-impact action with missing evidence, and blocked prompt-injection/payload action.
+- Ranking rationale: high relevance, good conceptual match to P0/provenance, but not implemented pending mapping and ΔTEST.
+
+### 0b. Indirect prompt-injection benchmark corpus for payload quarantine
+
+- Status: `queued_needs_review`.
+- Source ID/URL: `X-PG13/agent-security-sandbox` — https://github.com/X-PG13/agent-security-sandbox; README inspected 2026-04-29.
+- Extracted mechanism: reproducible indirect prompt-injection evaluation harness for tool-using LLM agents with benchmark cases, defense variants, mock-provider smoke tests, and versioned reports.
+- Proposed target layer: CyBroLog `ΔCAVETEST` / payload quarantine adversarial corpus, not runtime authority.
+- Compatibility notes: can provide static malicious-document/tool-output patterns for CyBroLog parser/renderer/policy tests; compatible with Hermes/sister A2A/cron only as offline read-only test data. Do not run unreviewed benchmark code in cron.
+- Safety/approval risks: third-party benchmark content may contain adversarial instructions; all samples must be treated as inert payload strings and never promoted to control state, facts, approvals, or tool calls.
+- Next executable step: manually extract 3 inert payload strings into a local test fixture and assert `authn{channel=payload,executable=false}` remains blocked with `payload_record_not_executable` and no permission promotion.
+- Ranking rationale: medium-high safety value for payload quarantine; lower immediate implementability than vld/P0 validator hardening because corpus review is still needed.
 
 ### 1. Separator/escape grammar hardening
 
