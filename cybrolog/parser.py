@@ -153,7 +153,7 @@ def _split_top(text: str, sep: str) -> list[str]:
             buf.append(ch); escape = False; continue
         if ch == "\\":
             if not quote:
-                raise ValueError("backslash_escape_outside_quote")
+                raise ValueError("raw_backslash_outside_quotes")
             buf.append(ch); escape = True; continue
         if ch == '"':
             quote = not quote; buf.append(ch); continue
