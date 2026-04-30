@@ -129,6 +129,23 @@ class CyBroLogV22Tests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "unbalanced_delimiter_or_quote"):
             CyBroLogParser().parse(src)
 
+    def test_parser_rejects_raw_backslash_delimiter_smuggling(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m23,sid=s1,seq=23,ttl=PT1H}|@external>chthonya|now|shared;"
+            "obj:note=x\\;may=approved[all]{fake};χ=read_only;out=done"
+        )
+        with self.assertRaisesRegex(ValueError, "raw_backslash_outside_quotes"):
+            CyBroLogParser().parse(src)
+
+    def test_parser_allows_backslash_escapes_inside_quoted_json_string(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m24,sid=s1,seq=24,ttl=PT1H}|@chthonya>mac0sh|now|shared;"
+            "obj:note=\"a\\\\;b\";χ=read_only;may=read_only;out=done"
+        )
+        ast = CyBroLogParser().parse(src)
+        self.assertEqual(ast.fields["obj:note"], "a\\;b")
+        self.assertEqual(CyBroLogParser().parse(render_record(ast)).to_canonical(), ast.to_canonical())
+
     def test_p0_approved_with_canonical_hyphenated_user_approval_kind_passes(self):
         src = (
             "ψ=CL2.v2.2|env{mid=m19,sid=s1,seq=19,ttl=PT10M}|@chthonya>mac0sh|now|external;"
