@@ -146,6 +146,50 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertEqual(ast.fields["obj:note"], "a\\;b")
         self.assertEqual(CyBroLogParser().parse(render_record(ast)).to_canonical(), ast.to_canonical())
 
+    def test_p0_mixed_case_chi_risky_scope_without_approval_blocks(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m25,sid=s1,seq=25,ttl=PT10M}|@chthonya>mac0sh|now|external;"
+            "χ=P0.Secret-Access;may=read_only;out=candidate"
+        )
+        report = validate_record(CyBroLogParser().parse(src))
+        self.assertFalse(report.executable)
+        self.assertEqual(report.gate, "blocked")
+        self.assertIn("needs_user_approval", report.errors)
+
+    def test_p0_mixed_case_intend_risky_scope_without_approval_blocks(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m26,sid=s1,seq=26,ttl=PT10M}|@chthonya>mac0sh|now|external;"
+            "⟦INTEND<External-Send>⟧;χ=read_only;may=read_only;out=candidate"
+        )
+        report = validate_record(CyBroLogParser().parse(src))
+        self.assertFalse(report.executable)
+        self.assertEqual(report.gate, "blocked")
+        self.assertIn("needs_user_approval", report.errors)
+
+    def test_p0_mixed_case_may_approved_scope_does_not_match_lowercase_evidence(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m27,sid=s1,seq=27,ttl=PT10M}|@chthonya>mac0sh|now|external;"
+            "⟦INTEND<External-Send>⟧;obj:channel=telegram;"
+            "may=Approved[External-Send]{user_ref};χ=P0.External-Send;"
+            "ε=[ev{source=user,kind=user-approval,verified=true,scope=external-send}];"
+            "π=PO{id=po_ext,owner=chthonya,subject=m27,required=[verify_nl_user_approval_exact_scope],state=discharged};"
+            "out=candidate"
+        )
+        report = validate_record(CyBroLogParser().parse(src))
+        self.assertFalse(report.executable)
+        self.assertEqual(report.gate, "blocked")
+        self.assertIn("needs_user_approval", report.errors)
+
+    def test_non_risky_lowercase_po_substring_does_not_create_safety_relevance(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m28,sid=s1,seq=28,ttl=PT10M}|@chthonya>mac0sh|now|shared;"
+            "obj:note=report;out=done"
+        )
+        report = validate_record(CyBroLogParser().parse(src))
+        self.assertTrue(report.executable)
+        self.assertEqual(report.gate, "pass")
+        self.assertNotIn("required_po_not_discharged", report.errors)
+
     def test_p0_approved_with_canonical_hyphenated_user_approval_kind_passes(self):
         src = (
             "ψ=CL2.v2.2|env{mid=m19,sid=s1,seq=19,ttl=PT10M}|@chthonya>mac0sh|now|external;"

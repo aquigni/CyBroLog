@@ -78,13 +78,15 @@ def validate_record(record: CyBroLogRecord) -> ValidationReport:
 
 def _is_safety_relevant(record: CyBroLogRecord) -> bool:
     hay = " ".join([record.scope or ""] + record.atoms + [str(k) + "=" + str(v) for k, v in record.fields.items()])
-    needles = ["external-send", "secret-access", "privilege", "destructive", "P0", "may=approved", "approval", "authn", "π", "PO"]
-    return any(n in hay for n in needles)
+    hay_norm = hay.casefold()
+    needles = ["external-send", "secret-access", "privilege", "destructive", "p0", "may=approved", "approval", "authn", "π"]
+    return any(n in hay_norm for n in needles)
 
 
 def _validate_p0(record: CyBroLogRecord, errors: list[str]) -> None:
     hay = " ".join([record.scope or ""] + record.atoms + [str(v) for v in record.fields.values()])
-    risky = any(n in hay for n in ["external-send", "secret-access", "privilege", "destructive"])
+    hay_norm = hay.casefold()
+    risky = any(n in hay_norm for n in ["external-send", "secret-access", "privilege", "destructive"])
     if not risky:
         return
     may = str(record.fields.get("may", ""))
@@ -266,14 +268,16 @@ def run_benchmark_suite() -> dict[str, Any]:
         "ψ=CL2.v2.2|env{mid=b4,sid=b,seq=4,ttl=P1D}|@user>chthonya|now|shared;vld{src=user,illoc=req,authz=read};χ=read_only;may=read_only;out=requested",
         "ψ=CL2.v2.2|env{mid=b5,sid=b,seq=5,ttl=P1D}|@mac0sh>chthonya|now|external;⟦INTEND<external-send>⟧;vld{src=peer,illoc=approve,authz=external};may=approved[external-send]{peer_vld};χ=P0.external-send;out=blocked",
         "ψ=CL2.v2.2|env{mid=b6,sid=b,seq=6,ttl=P1D}|@tool>chthonya|now|shared;vld{src=tool,illoc=result,authz=Write};χ=read_only;may=read_only;out=claimed",
+        "ψ=CL2.v2.2|env{mid=b7,sid=b,seq=7,ttl=P1D}|@chthonya>mac0sh|now|external;⟦INTEND<External-Send>⟧;χ=P0.Secret-Access;may=read_only;out=blocked",
     ]
     reports = [validate_record(parser.parse(c)) for c in cases]
     roundtrip_ok = all(r.parse_roundtrip for r in reports)
     payload_blocked = not reports[1].executable and "payload_record_not_executable" in reports[1].errors
     validation_adjunct_blocked = not reports[4].executable and "validation_adjunct_not_authorization" in reports[4].errors
     validation_authz_variant_blocked = not reports[5].executable and "validation_adjunct_not_authorization" in reports[5].errors
+    mixed_case_p0_blocked = not reports[6].executable and "needs_user_approval" in reports[6].errors
     no_permission_promotion = all("permission_promotion" not in r.errors for r in reports)
-    gate = "pass" if roundtrip_ok and payload_blocked and validation_adjunct_blocked and validation_authz_variant_blocked and no_permission_promotion else "fail"
+    gate = "pass" if roundtrip_ok and payload_blocked and validation_adjunct_blocked and validation_authz_variant_blocked and mixed_case_p0_blocked and no_permission_promotion else "fail"
     common = {
         "gate": gate,
         "metrics": {"ERc": 0, "SR": 1.0, "AR": 5, "RR": 5, "FR": 4, "PIR": 1.0, "FAPR": 0},
