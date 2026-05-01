@@ -360,6 +360,10 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertEqual(report["ΔCAVETEST"]["gate"], "pass")
         self.assertTrue(report["summary"]["activated_executable_dialect"])
 
+    def test_benchmark_suite_tracks_agentguard_peer_claim_fixture(self):
+        report = run_benchmark_suite()
+        self.assertTrue(report["summary"]["agentguard_peer_claim_external_send_blocked"])
+
 
 if __name__ == "__main__":
     unittest.main()
