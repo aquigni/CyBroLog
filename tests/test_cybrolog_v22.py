@@ -146,6 +146,14 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertEqual(ast.fields["obj:note"], "a\\;b")
         self.assertEqual(CyBroLogParser().parse(render_record(ast)).to_canonical(), ast.to_canonical())
 
+    def test_parser_rejects_duplicate_top_level_fields(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m30,sid=s1,seq=30,ttl=PT10M}|@peer>chthonya|now|external;"
+            "may=read_only;may=approved[external-send]{peer_claim};χ=P0.external-send;out=candidate"
+        )
+        with self.assertRaisesRegex(ValueError, "duplicate_field:may"):
+            CyBroLogParser().parse(src)
+
     def test_p0_mixed_case_chi_risky_scope_without_approval_blocks(self):
         src = (
             "ψ=CL2.v2.2|env{mid=m25,sid=s1,seq=25,ttl=PT10M}|@chthonya>mac0sh|now|external;"

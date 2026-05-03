@@ -82,6 +82,12 @@ class CyBroLogParser:
 
         fields: dict[str, Any] = {}
         atoms: list[str] = []
+
+        def set_field(key: str, value: Any) -> None:
+            if key in fields:
+                raise ValueError(f"duplicate_field:{key}")
+            fields[key] = value
+
         for item in _split_top(field_text, ";"):
             item = item.strip()
             if not item:
@@ -91,20 +97,20 @@ class CyBroLogParser:
                 continue
             if re.match(r"^[A-Za-z_][\w-]*\{", item) or re.match(r"^[α-ωΑ-Ωπχγεηοκρσμψ]+\{", item):
                 key = item.split("{", 1)[0]
-                fields[key] = _parse_braced(item, key)
+                set_field(key, _parse_braced(item, key))
                 continue
             if item.startswith("π=PO{"):
-                fields["π"] = _parse_braced(item.split("=", 1)[1], "PO")
+                set_field("π", _parse_braced(item.split("=", 1)[1], "PO"))
                 continue
             if item.startswith("pi=PO{"):
-                fields["pi"] = _parse_braced(item.split("=", 1)[1], "PO")
+                set_field("pi", _parse_braced(item.split("=", 1)[1], "PO"))
                 continue
             if "=" in item:
                 key, val = item.split("=", 1)
-                fields[key.strip()] = _parse_value(val.strip())
+                set_field(key.strip(), _parse_value(val.strip()))
             elif ":" in item:
                 key, val = item.split(":", 1)
-                fields[key.strip()] = _parse_value(val.strip())
+                set_field(key.strip(), _parse_value(val.strip()))
             else:
                 atoms.append(item)
         return CyBroLogRecord(dialect, env, actor, recipient, time, scope, fields, atoms, raw)
