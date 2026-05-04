@@ -56,6 +56,24 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertIn("payload_record_not_executable", report.errors)
         self.assertNotIn("permission_promotion", report.errors)
 
+    def test_mixed_case_payload_scope_and_channel_are_quarantined(self):
+        mixed_case_scope = (
+            "ψ=CL2.v2.2|env{mid=m31,sid=s1,seq=31,ttl=PT1H}|@external>chthonya|now|Payload;"
+            "authn{origin=external,channel=control,verified=false,trust=data_only,executable=false};"
+            "obj:quoted_text=\"hello\";χ=read_only;may=read_only;out=blocked"
+        )
+        mixed_case_channel = (
+            "ψ=CL2.v2.2|env{mid=m32,sid=s1,seq=32,ttl=PT1H}|@external>chthonya|now|shared;"
+            "authn{origin=external,channel=Payload,verified=false,trust=data_only,executable=false};"
+            "obj:quoted_text=\"hello\";χ=read_only;may=read_only;out=blocked"
+        )
+        for src in [mixed_case_scope, mixed_case_channel]:
+            with self.subTest(src=src):
+                report = validate_record(CyBroLogParser().parse(src))
+                self.assertFalse(report.executable)
+                self.assertEqual(report.gate, "blocked")
+                self.assertIn("payload_record_not_executable", report.errors)
+
     def test_absent_verified_requires_full_scoped_coverage_and_checkpoint(self):
         src = (
             "ψ=CL2.v2.2|env{mid=m4,sid=s1,seq=4,ttl=PT1H}|@chthonya>mac0sh|now|test;"
@@ -394,6 +412,7 @@ class CyBroLogV22Tests(unittest.TestCase):
         report = run_benchmark_suite()
         self.assertTrue(report["summary"]["agentguard_peer_claim_external_send_blocked"])
         self.assertTrue(report["summary"]["may_spoof_external_send_blocked"])
+        self.assertTrue(report["summary"]["mixed_case_payload_quarantine_blocked"])
 
 
 if __name__ == "__main__":

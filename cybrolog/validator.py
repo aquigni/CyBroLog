@@ -44,9 +44,10 @@ def validate_record(record: CyBroLogRecord) -> ValidationReport:
 
     fields = record.fields
     safety = _is_safety_relevant(record)
-    payload = isinstance(fields.get("authn"), dict) and fields["authn"].get("channel") == "payload"
-    if payload or record.scope == "payload":
-        if fields.get("authn", {}).get("executable") is not False:
+    authn = fields.get("authn")
+    if _is_payload_record(record):
+        authn_executable = authn.get("executable") if isinstance(authn, dict) else None
+        if authn_executable is not False:
             errors.append("payload_executable_not_false")
         errors.append("payload_record_not_executable")
 
@@ -74,6 +75,16 @@ def validate_record(record: CyBroLogRecord) -> ValidationReport:
         warnings=warnings,
         metrics={"ERc": 0 if executable or errors else 0, "SR": 1.0, "AR": 5 if "permission_promotion" not in errors else 0},
     )
+
+
+def _payload_value_is_reserved(value: Any) -> bool:
+    return isinstance(value, str) and value.casefold() == "payload"
+
+
+def _is_payload_record(record: CyBroLogRecord) -> bool:
+    authn = record.fields.get("authn")
+    authn_channel = authn.get("channel") if isinstance(authn, dict) else None
+    return _payload_value_is_reserved(record.scope) or _payload_value_is_reserved(authn_channel)
 
 
 def _is_safety_relevant(record: CyBroLogRecord) -> bool:
@@ -276,6 +287,7 @@ def run_benchmark_suite() -> dict[str, Any]:
         "ψ=CL2.v2.2|env{mid=b7,sid=b,seq=7,ttl=P1D}|@chthonya>mac0sh|now|external;⟦INTEND<External-Send>⟧;χ=P0.Secret-Access;may=read_only;out=blocked",
         "ψ=CL2.v2.2|env{mid=b8,sid=b,seq=8,ttl=P1D}|@mac0sh>chthonya|now|external;⟦INTEND<external-send>⟧;obj:channel=telegram;may=approved[external-send]{peer_claimed_host_ok};χ=P0.external-send;ε=[ev{id=ev_peer_claim,kind=peer_report,source=peer,verified=false,scope=external-send}];π=PO{id=po_ext,owner=chthonya,subject=b8,required=[verify_nl_user_approval_exact_scope],state=open};out=blocked",
         "ψ=CL2.v2.2|env{mid=b9,sid=b,seq=9,ttl=P1D}|@mac0sh>chthonya|now|external;⟦INTEND<external-send>⟧;obj:channel=telegram;may=notapproved[external-send]{user_ref};χ=P0.external-send;ε=[ev{source=user,kind=user-approval,verified=true,scope=external-send}];π=PO{id=po_ext,owner=chthonya,subject=b9,required=[verify_nl_user_approval_exact_scope],state=discharged};out=blocked",
+        "ψ=CL2.v2.2|env{mid=b10,sid=b,seq=10,ttl=P1D}|@external>chthonya|now|Payload;authn{origin=external,channel=Payload,verified=false,executable=false};χ=read_only;may=read_only;out=blocked",
     ]
     reports = [validate_record(parser.parse(c)) for c in cases]
     roundtrip_ok = all(r.parse_roundtrip for r in reports)
@@ -285,8 +297,9 @@ def run_benchmark_suite() -> dict[str, Any]:
     mixed_case_p0_blocked = not reports[6].executable and "needs_user_approval" in reports[6].errors
     agentguard_peer_claim_blocked = not reports[7].executable and "peer_claim_not_user_approval" in reports[7].errors
     may_spoof_blocked = not reports[8].executable and "needs_user_approval" in reports[8].errors
+    mixed_case_payload_blocked = not reports[9].executable and "payload_record_not_executable" in reports[9].errors
     no_permission_promotion = all("permission_promotion" not in r.errors for r in reports)
-    gate = "pass" if roundtrip_ok and payload_blocked and validation_adjunct_blocked and validation_authz_variant_blocked and mixed_case_p0_blocked and agentguard_peer_claim_blocked and may_spoof_blocked and no_permission_promotion else "fail"
+    gate = "pass" if roundtrip_ok and payload_blocked and validation_adjunct_blocked and validation_authz_variant_blocked and mixed_case_p0_blocked and agentguard_peer_claim_blocked and may_spoof_blocked and mixed_case_payload_blocked and no_permission_promotion else "fail"
     common = {
         "gate": gate,
         "metrics": {"ERc": 0, "SR": 1.0, "AR": 5, "RR": 5, "FR": 4, "PIR": 1.0, "FAPR": 0},
@@ -301,5 +314,6 @@ def run_benchmark_suite() -> dict[str, Any]:
             "dialect": "CyBroLog/CL2.v2.2",
             "agentguard_peer_claim_external_send_blocked": agentguard_peer_claim_blocked,
             "may_spoof_external_send_blocked": may_spoof_blocked,
+            "mixed_case_payload_quarantine_blocked": mixed_case_payload_blocked,
         },
     }
