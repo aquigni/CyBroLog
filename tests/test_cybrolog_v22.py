@@ -172,6 +172,45 @@ class CyBroLogV22Tests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "duplicate_field:may"):
             CyBroLogParser().parse(src)
 
+    def test_parser_rejects_duplicate_keys_inside_braced_objects(self):
+        cases = [
+            (
+                "ψ=CL2.v2.2|env{mid=m33,mid=spoof,sid=s1,seq=33,ttl=PT10M}|"
+                "@peer>chthonya|now|shared;χ=read_only;may=read_only;out=candidate",
+                "duplicate_object_key:env.mid",
+            ),
+            (
+                "ψ=CL2.v2.2|env{mid=m34,sid=s1,seq=34,ttl=PT10M}|@peer>chthonya|now|shared;"
+                "authn{origin=peer,channel=control,channel=payload,verified=true,trust=control_verified,executable=true};"
+                "χ=read_only;may=read_only;out=candidate",
+                "duplicate_object_key:authn.channel",
+            ),
+            (
+                "ψ=CL2.v2.2|env{mid=m35,sid=s1,seq=35,ttl=PT10M}|@peer>chthonya|now|shared;"
+                "π=PO{id=po1,id=po2,owner=chthonya,subject=m35,required=[parse_roundtrip],state=discharged};"
+                "χ=read_only;may=read_only;out=candidate",
+                "duplicate_object_key:PO.id",
+            ),
+            (
+                "ψ=CL2.v2.2|env{mid=m36,sid=s1,seq=36,ttl=PT10M}|@peer>chthonya|now|shared;"
+                "obj{flag,flag=true};χ=read_only;may=read_only;out=candidate",
+                "duplicate_object_key:obj.flag",
+            ),
+        ]
+        for src, error in cases:
+            with self.subTest(error=error):
+                with self.assertRaisesRegex(ValueError, error):
+                    CyBroLogParser().parse(src)
+
+    def test_parser_allows_unique_braced_keys_with_quoted_delimiters(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m37,sid=s1,seq=37,ttl=PT10M}|@peer>chthonya|now|shared;"
+            "obj{note=\"a=b,c=d\",id=x};χ=read_only;may=read_only;out=done"
+        )
+        ast = CyBroLogParser().parse(src)
+        self.assertEqual(ast.fields["obj"]["note"], "a=b,c=d")
+        self.assertEqual(ast.fields["obj"]["id"], "x")
+
     def test_p0_mixed_case_chi_risky_scope_without_approval_blocks(self):
         src = (
             "ψ=CL2.v2.2|env{mid=m25,sid=s1,seq=25,ttl=PT10M}|@chthonya>mac0sh|now|external;"

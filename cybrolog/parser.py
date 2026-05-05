@@ -193,9 +193,15 @@ def _parse_braced(text: str, name: str) -> dict[str, Any]:
             continue
         if "=" in item:
             k, v = item.split("=", 1)
-            out[k.strip()] = _parse_value(v.strip())
+            key = k.strip()
+            if key in out:
+                raise ValueError(f"duplicate_object_key:{name}.{key}")
+            out[key] = _parse_value(v.strip())
         else:
-            out[item] = True
+            key = item.strip()
+            if key in out:
+                raise ValueError(f"duplicate_object_key:{name}.{key}")
+            out[key] = True
     return out
 
 
