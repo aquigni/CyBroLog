@@ -495,6 +495,21 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertEqual(report["ΔCAVETEST"]["gate"], "pass")
         self.assertTrue(report["summary"]["activated_executable_dialect"])
 
+    def test_dream_packet_service_identity_proposal_requires_human_gate(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m40,sid=dream,seq=40,ttl=P1D}|@chthonya>swarm|now|shared;"
+            "⟦PROPOSE<service-identity-promotion>⟧;"
+            "obj:packet=cybroswarm.shared_dream_packet.v0;"
+            "obj:candidate=mac0sh-service-identity;"
+            "vld{src=peer,illoc=proposal,authz=service-identity};"
+            "χ=P0.service-identity-promotion;may=read_only;out=candidate"
+        )
+        report = validate_record(CyBroLogParser().parse(src))
+        self.assertFalse(report.executable)
+        self.assertEqual(report.gate, "blocked")
+        self.assertIn("needs_user_approval", report.errors)
+        self.assertNotIn("permission_promotion", report.errors)
+
     def test_benchmark_suite_tracks_agentguard_peer_claim_fixture(self):
         report = run_benchmark_suite()
         self.assertTrue(report["summary"]["agentguard_peer_claim_external_send_blocked"])
@@ -502,6 +517,7 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertTrue(report["summary"]["mixed_case_payload_quarantine_blocked"])
         self.assertTrue(report["summary"]["ambiguous_ev_attributes_blocked"])
         self.assertTrue(report["summary"]["p0_shared_wiki_mutation_readonly_blocked"])
+        self.assertTrue(report["summary"]["dream_service_identity_promotion_readonly_blocked"])
 
 
 if __name__ == "__main__":
