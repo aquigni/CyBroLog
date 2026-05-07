@@ -245,6 +245,33 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertEqual(report.gate, "blocked")
         self.assertIn("needs_user_approval", report.errors)
 
+    def test_p0_shared_wiki_mutation_without_user_approval_blocks(self):
+        cases = [
+            "χ=P0.shared-wiki-mutation;may=read_only",
+            "χ=shared-wiki-mutation;may=read_only",
+        ]
+        for fields in cases:
+            with self.subTest(fields=fields):
+                src = (
+                    "ψ=CL2.v2.2|env{mid=m39,sid=s1,seq=39,ttl=PT10M}|@chthonya>mac0sh|now|shared;"
+                    "⟦INTEND<shared-wiki-mutation>⟧;"
+                    f"{fields};out=candidate"
+                )
+                report = validate_record(CyBroLogParser().parse(src))
+                self.assertFalse(report.executable)
+                self.assertEqual(report.gate, "blocked")
+                self.assertIn("needs_user_approval", report.errors)
+
+    def test_non_risky_semantic_mutation_phrase_does_not_create_safety_relevance(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m40,sid=s1,seq=40,ttl=PT10M}|@chthonya>mac0sh|now|shared;"
+            "obj:note=\"semantic mutation per iteration is descriptive only\";out=done"
+        )
+        report = validate_record(CyBroLogParser().parse(src))
+        self.assertTrue(report.executable)
+        self.assertEqual(report.gate, "pass")
+        self.assertNotIn("required_po_not_discharged", report.errors)
+
     def test_non_risky_lowercase_po_substring_does_not_create_safety_relevance(self):
         src = (
             "ψ=CL2.v2.2|env{mid=m28,sid=s1,seq=28,ttl=PT10M}|@chthonya>mac0sh|now|shared;"
@@ -474,6 +501,7 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertTrue(report["summary"]["may_spoof_external_send_blocked"])
         self.assertTrue(report["summary"]["mixed_case_payload_quarantine_blocked"])
         self.assertTrue(report["summary"]["ambiguous_ev_attributes_blocked"])
+        self.assertTrue(report["summary"]["p0_shared_wiki_mutation_readonly_blocked"])
 
 
 if __name__ == "__main__":
