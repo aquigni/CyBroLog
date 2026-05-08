@@ -510,6 +510,34 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertIn("needs_user_approval", report.errors)
         self.assertNotIn("permission_promotion", report.errors)
 
+    def test_operational_substrate_mutation_scopes_require_human_gate(self):
+        scopes = [
+            "cron-mutation",
+            "canonical-memory-write",
+            "service-restart",
+            "credential-rotation",
+        ]
+        for seq, scope in enumerate(scopes, start=41):
+            with self.subTest(scope=scope):
+                src = (
+                    f"ψ=CL2.v2.2|env{{mid=m{seq},sid=ops,seq={seq},ttl=P1D}}|@chthonya>swarm|now|shared;"
+                    f"⟦INTEND<{scope}>⟧;χ=P0.{scope};may=read_only;out=candidate"
+                )
+                report = validate_record(CyBroLogParser().parse(src))
+                self.assertFalse(report.executable)
+                self.assertEqual(report.gate, "blocked")
+                self.assertIn("needs_user_approval", report.errors)
+
+    def test_operational_substrate_readonly_observation_can_pass(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m45,sid=ops,seq=45,ttl=P1D}|@chthonya>mac0sh|now|shared;"
+            "⟦OBSERVE<cron_status+service_health+canonical_memory_status+credential_rotation_policy>⟧;"
+            "χ=read_only;may=read_only;out=summary"
+        )
+        report = validate_record(CyBroLogParser().parse(src))
+        self.assertTrue(report.executable)
+        self.assertEqual(report.gate, "pass")
+
     def test_benchmark_suite_tracks_agentguard_peer_claim_fixture(self):
         report = run_benchmark_suite()
         self.assertTrue(report["summary"]["agentguard_peer_claim_external_send_blocked"])
@@ -518,6 +546,7 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertTrue(report["summary"]["ambiguous_ev_attributes_blocked"])
         self.assertTrue(report["summary"]["p0_shared_wiki_mutation_readonly_blocked"])
         self.assertTrue(report["summary"]["dream_service_identity_promotion_readonly_blocked"])
+        self.assertTrue(report["summary"]["operational_substrate_mutation_readonly_blocked"])
 
 
 if __name__ == "__main__":
