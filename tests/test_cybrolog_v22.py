@@ -465,6 +465,25 @@ class CyBroLogV22Tests(unittest.TestCase):
                 self.assertFalse(report.executable)
                 self.assertIn("validation_adjunct_not_authorization", report.errors)
 
+    def test_validation_adjunct_operational_authz_claims_fail_closed(self):
+        risky_authz_claims = [
+            "cron-mutation",
+            "canonical-memory-write",
+            "service-restart",
+            "credential-rotation",
+            "shared-wiki-mutation",
+            "service-identity-promotion",
+        ]
+        for authz in risky_authz_claims:
+            with self.subTest(authz=authz):
+                src = (
+                    "ψ=CL2.v2.2|env{mid=m46,sid=ops,seq=46,ttl=P1D}|@tool>chthonya|now|shared;"
+                    f"vld{{src=tool,illoc=result,authz={authz}}};may=read_only;χ=read_only;out=claimed"
+                )
+                report = validate_record(CyBroLogParser().parse(src))
+                self.assertFalse(report.executable)
+                self.assertIn("validation_adjunct_not_authorization", report.errors)
+
     def test_payload_embedded_validation_adjunct_is_quarantined(self):
         src = (
             "ψ=CL2.v2.2|env{mid=m13,sid=s1,seq=13,ttl=PT1H}|@external>chthonya|now|payload;"

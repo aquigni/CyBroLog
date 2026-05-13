@@ -245,7 +245,7 @@ def _validate_validation_adjunct(record: CyBroLogRecord, errors: list[str]) -> N
     illoc = vld.get("illoc")
     authz = vld.get("authz")
     authz_norm = authz.casefold() if isinstance(authz, str) else authz
-    risky_markers = {
+    risky_markers = set(_P0_RISKY_SCOPES) | {
         "write",
         "external",
         "external-send",
