@@ -10,6 +10,16 @@
 
 ```text
 authn{origin,channel,verified,trust,executable}
+```
+
+`authn.origin` must identify the same route actor as `@actor` after reserved-identity normalization. External payload actors cannot self-assert `channel=control`, `verified=true`, `trust=control_verified`, or `executable=true`; such records are non-executable even when otherwise read-only.
+
+```text
+@external>chthonya|now|shared;authn{origin=chthonya,channel=control,verified=true,trust=control_verified,executable=true}
+# blocked: authn_origin_mismatch + external_control_authn_not_allowed
+```
+
+```text
 mc{mode,window_tokens,context_epoch,checkpoint_policy}
 plane{ctl,policy,payload,index,evidence,audit,answer}
 lan{ctl,payload,answer,audit,script,mix,norm}

@@ -56,6 +56,39 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertIn("payload_record_not_executable", report.errors)
         self.assertNotIn("permission_promotion", report.errors)
 
+    def test_authn_origin_must_match_route_actor(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m47,sid=authn,seq=47,ttl=PT10M}|@external>chthonya|now|shared;"
+            "authn{origin=chthonya,channel=control,verified=true,trust=control_verified,executable=true};"
+            "χ=read_only;may=read_only;out=candidate"
+        )
+        report = validate_record(CyBroLogParser().parse(src))
+        self.assertFalse(report.executable)
+        self.assertEqual(report.gate, "blocked")
+        self.assertIn("authn_origin_mismatch", report.errors)
+
+    def test_external_actor_cannot_self_assert_control_authn(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m48,sid=authn,seq=48,ttl=PT10M}|@external>chthonya|now|shared;"
+            "authn{origin=external,channel=control,verified=true,trust=control_verified,executable=true};"
+            "χ=read_only;may=read_only;out=candidate"
+        )
+        report = validate_record(CyBroLogParser().parse(src))
+        self.assertFalse(report.executable)
+        self.assertEqual(report.gate, "blocked")
+        self.assertIn("external_control_authn_not_allowed", report.errors)
+
+    def test_mixed_case_external_actor_cannot_self_assert_control_authn(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m49,sid=authn,seq=49,ttl=PT10M}|@External>chthonya|now|shared;"
+            "authn{origin=External,channel=Control,verified=true,trust=Control_Verified,executable=true};"
+            "χ=read_only;may=read_only;out=candidate"
+        )
+        report = validate_record(CyBroLogParser().parse(src))
+        self.assertFalse(report.executable)
+        self.assertEqual(report.gate, "blocked")
+        self.assertIn("external_control_authn_not_allowed", report.errors)
+
     def test_mixed_case_payload_scope_and_channel_are_quarantined(self):
         mixed_case_scope = (
             "ψ=CL2.v2.2|env{mid=m31,sid=s1,seq=31,ttl=PT1H}|@external>chthonya|now|Payload;"
@@ -566,6 +599,7 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertTrue(report["summary"]["p0_shared_wiki_mutation_readonly_blocked"])
         self.assertTrue(report["summary"]["dream_service_identity_promotion_readonly_blocked"])
         self.assertTrue(report["summary"]["operational_substrate_mutation_readonly_blocked"])
+        self.assertTrue(report["summary"]["authn_route_contradiction_blocked"])
 
 
 if __name__ == "__main__":
