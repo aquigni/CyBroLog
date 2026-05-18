@@ -100,6 +100,17 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertEqual(report.gate, "blocked")
         self.assertIn("unauthorized_control_authn_actor", report.errors)
 
+    def test_control_authn_requires_explicit_origin(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m51,sid=authn,seq=51,ttl=PT10M}|@chthonya>mac0sh|now|shared;"
+            "authn{channel=control,verified=true,trust=control_verified,executable=true};"
+            "χ=read_only;may=read_only;out=candidate"
+        )
+        report = validate_record(CyBroLogParser().parse(src))
+        self.assertFalse(report.executable)
+        self.assertEqual(report.gate, "blocked")
+        self.assertIn("control_authn_origin_missing", report.errors)
+
     def test_mixed_case_payload_scope_and_channel_are_quarantined(self):
         mixed_case_scope = (
             "ψ=CL2.v2.2|env{mid=m31,sid=s1,seq=31,ttl=PT1H}|@external>chthonya|now|Payload;"
