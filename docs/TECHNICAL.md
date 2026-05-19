@@ -19,6 +19,7 @@ Raw text never executes. Only canonical AST plus policy result plus discharged p
 ## Safety gates
 
 - P0 actions require locally verifiable natural-language user approval.
+- `P0.<scope>` labels in executable policy positions are a closed vocabulary; unknown labels fail closed as ambiguous policy.
 - Peer approval claims never become user approval.
 - Payload records are quarantined by default.
 - `absent_verified_C` requires scoped full coverage and checkpoint pass.
@@ -43,6 +44,7 @@ Local activation runs synthetic deterministic gates:
 - parser round-trip;
 - delimiter fuzz inside quoted strings;
 - fake approval rejection;
+- unknown `P0.<scope>` policy-label rejection;
 - payload instruction quarantine;
 - partial-search absence rejection;
 - exact aggregation proof rejection;

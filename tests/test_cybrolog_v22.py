@@ -317,6 +317,42 @@ class CyBroLogV22Tests(unittest.TestCase):
                 self.assertEqual(report.gate, "blocked")
                 self.assertIn("needs_user_approval", report.errors)
 
+    def test_unknown_p0_scope_in_chi_fails_closed(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m52,sid=p0,seq=52,ttl=PT10M}|@chthonya>mac0sh|now|shared;"
+            "χ=P0.unregistered-action;may=read_only;out=candidate"
+        )
+        report = validate_record(CyBroLogParser().parse(src))
+        self.assertFalse(report.executable)
+        self.assertEqual(report.gate, "blocked")
+        self.assertIn("unknown_p0_scope", report.errors)
+
+    def test_unknown_p0_scope_in_structured_atoms_fails_closed(self):
+        atoms = ["⟦INTEND<P0.unregistered-action>⟧", "⟦PROPOSE<P0.unregistered-action>⟧"]
+        for atom in atoms:
+            with self.subTest(atom=atom):
+                src = (
+                    "ψ=CL2.v2.2|env{mid=m53,sid=p0,seq=53,ttl=PT10M}|@chthonya>mac0sh|now|shared;"
+                    f"{atom};χ=read_only;may=read_only;out=candidate"
+                )
+                report = validate_record(CyBroLogParser().parse(src))
+                self.assertFalse(report.executable)
+                self.assertEqual(report.gate, "blocked")
+                self.assertIn("unknown_p0_scope", report.errors)
+
+    def test_malformed_known_p0_scope_suffix_fails_closed(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m54,sid=p0,seq=54,ttl=PT10M}|@chthonya>mac0sh|now|external;"
+            "⟦INTEND<P0.external-send->⟧;may=approved[external-send-]{user_ref};χ=P0.external-send-;"
+            "ε=[ev{source=user,kind=user-approval,verified=true,scope=external-send-}];"
+            "π=PO{id=po_ext,owner=chthonya,subject=m54,required=[verify_nl_user_approval_exact_scope],state=discharged};"
+            "out=candidate"
+        )
+        report = validate_record(CyBroLogParser().parse(src))
+        self.assertFalse(report.executable)
+        self.assertEqual(report.gate, "blocked")
+        self.assertIn("unknown_p0_scope", report.errors)
+
     def test_non_risky_semantic_mutation_phrase_does_not_create_safety_relevance(self):
         src = (
             "ψ=CL2.v2.2|env{mid=m40,sid=s1,seq=40,ttl=PT10M}|@chthonya>mac0sh|now|shared;"
@@ -623,6 +659,7 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertTrue(report["summary"]["operational_substrate_mutation_readonly_blocked"])
         self.assertTrue(report["summary"]["authn_route_contradiction_blocked"])
         self.assertTrue(report["summary"]["unauthorized_control_authn_actor_blocked"])
+        self.assertTrue(report["summary"].get("unknown_p0_scope_blocked"))
 
 
 if __name__ == "__main__":
