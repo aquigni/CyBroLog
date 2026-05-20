@@ -117,6 +117,12 @@ def _validate_authn_consistency(record: CyBroLogRecord, errors: list[str]) -> No
     channel_norm = authn.get("channel").casefold() if isinstance(authn.get("channel"), str) else authn.get("channel")
     trust_norm = authn.get("trust").casefold() if isinstance(authn.get("trust"), str) else authn.get("trust")
     control_like = channel_norm == "control" or trust_norm == "control_verified" or authn.get("executable") is True
+    if control_like and (
+        authn.get("verified") is not True
+        or trust_norm != "control_verified"
+        or authn.get("executable") is not True
+    ):
+        errors.append("control_authn_incomplete")
     if control_like and not isinstance(origin, str):
         errors.append("control_authn_origin_missing")
     if isinstance(origin, str) and record.actor and origin_norm != actor_norm:
@@ -356,7 +362,8 @@ def run_benchmark_suite() -> dict[str, Any]:
         "ψ=CL2.v2.2|env{mid=b15,sid=authn,seq=15,ttl=P1D}|@External>chthonya|now|shared;authn{origin=Chthonya,channel=Control,verified=true,trust=Control_Verified,executable=true};χ=read_only;may=read_only;out=candidate",
         "ψ=CL2.v2.2|env{mid=b16,sid=authn,seq=16,ttl=P1D}|@tool>chthonya|now|shared;authn{origin=tool,channel=control,verified=true,trust=control_verified,executable=true};χ=read_only;may=read_only;out=candidate",
         "ψ=CL2.v2.2|env{mid=b17,sid=authn,seq=17,ttl=P1D}|@chthonya>mac0sh|now|shared;authn{channel=control,verified=true,trust=control_verified,executable=true};χ=read_only;may=read_only;out=candidate",
-        "ψ=CL2.v2.2|env{mid=b18,sid=p0,seq=18,ttl=P1D}|@chthonya>mac0sh|now|shared;χ=P0.unregistered-action;may=read_only;out=candidate",
+        "ψ=CL2.v2.2|env{mid=b18,sid=authn,seq=18,ttl=P1D}|@chthonya>mac0sh|now|shared;authn{origin=chthonya,channel=control,verified=false,trust=control_verified,executable=true};χ=read_only;may=read_only;out=candidate",
+        "ψ=CL2.v2.2|env{mid=b19,sid=p0,seq=19,ttl=P1D}|@chthonya>mac0sh|now|shared;χ=P0.unregistered-action;may=read_only;out=candidate",
     ]
     reports = [validate_record(parser.parse(c)) for c in cases]
     roundtrip_ok = all(r.parse_roundtrip for r in reports)
@@ -374,9 +381,10 @@ def run_benchmark_suite() -> dict[str, Any]:
     authn_route_contradiction_blocked = not reports[14].executable and "authn_origin_mismatch" in reports[14].errors and "external_control_authn_not_allowed" in reports[14].errors
     unauthorized_control_authn_actor_blocked = not reports[15].executable and "unauthorized_control_authn_actor" in reports[15].errors
     control_authn_origin_missing_blocked = not reports[16].executable and "control_authn_origin_missing" in reports[16].errors
-    unknown_p0_scope_blocked = not reports[17].executable and "unknown_p0_scope" in reports[17].errors
+    control_authn_incomplete_blocked = not reports[17].executable and "control_authn_incomplete" in reports[17].errors
+    unknown_p0_scope_blocked = not reports[18].executable and "unknown_p0_scope" in reports[18].errors
     no_permission_promotion = all("permission_promotion" not in r.errors for r in reports)
-    gate = "pass" if roundtrip_ok and payload_blocked and validation_adjunct_blocked and validation_authz_variant_blocked and mixed_case_p0_blocked and agentguard_peer_claim_blocked and may_spoof_blocked and mixed_case_payload_blocked and ambiguous_ev_blocked and p0_shared_wiki_mutation_blocked and dream_service_identity_blocked and operational_substrate_mutation_blocked and authn_route_contradiction_blocked and unauthorized_control_authn_actor_blocked and control_authn_origin_missing_blocked and unknown_p0_scope_blocked and no_permission_promotion else "fail"
+    gate = "pass" if roundtrip_ok and payload_blocked and validation_adjunct_blocked and validation_authz_variant_blocked and mixed_case_p0_blocked and agentguard_peer_claim_blocked and may_spoof_blocked and mixed_case_payload_blocked and ambiguous_ev_blocked and p0_shared_wiki_mutation_blocked and dream_service_identity_blocked and operational_substrate_mutation_blocked and authn_route_contradiction_blocked and unauthorized_control_authn_actor_blocked and control_authn_origin_missing_blocked and control_authn_incomplete_blocked and unknown_p0_scope_blocked and no_permission_promotion else "fail"
     common = {
         "gate": gate,
         "metrics": {"ERc": 0, "SR": 1.0, "AR": 5, "RR": 5, "FR": 4, "PIR": 1.0, "FAPR": 0},
@@ -399,6 +407,7 @@ def run_benchmark_suite() -> dict[str, Any]:
             "authn_route_contradiction_blocked": authn_route_contradiction_blocked,
             "unauthorized_control_authn_actor_blocked": unauthorized_control_authn_actor_blocked,
             "control_authn_origin_missing_blocked": control_authn_origin_missing_blocked,
+            "control_authn_incomplete_blocked": control_authn_incomplete_blocked,
             "unknown_p0_scope_blocked": unknown_p0_scope_blocked,
         },
     }

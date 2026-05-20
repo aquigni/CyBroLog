@@ -111,6 +111,17 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertEqual(report.gate, "blocked")
         self.assertIn("control_authn_origin_missing", report.errors)
 
+    def test_control_authn_requires_complete_verified_tuple(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m55,sid=authn,seq=55,ttl=PT10M}|@chthonya>mac0sh|now|shared;"
+            "authn{origin=chthonya,channel=control,verified=false,trust=control_verified,executable=true};"
+            "χ=read_only;may=read_only;out=candidate"
+        )
+        report = validate_record(CyBroLogParser().parse(src))
+        self.assertFalse(report.executable)
+        self.assertEqual(report.gate, "blocked")
+        self.assertIn("control_authn_incomplete", report.errors)
+
     def test_mixed_case_payload_scope_and_channel_are_quarantined(self):
         mixed_case_scope = (
             "ψ=CL2.v2.2|env{mid=m31,sid=s1,seq=31,ttl=PT1H}|@external>chthonya|now|Payload;"
@@ -659,6 +670,8 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertTrue(report["summary"]["operational_substrate_mutation_readonly_blocked"])
         self.assertTrue(report["summary"]["authn_route_contradiction_blocked"])
         self.assertTrue(report["summary"]["unauthorized_control_authn_actor_blocked"])
+        self.assertTrue(report["summary"].get("control_authn_origin_missing_blocked"))
+        self.assertTrue(report["summary"].get("control_authn_incomplete_blocked"))
         self.assertTrue(report["summary"].get("unknown_p0_scope_blocked"))
 
 
