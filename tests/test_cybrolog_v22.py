@@ -364,6 +364,44 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertEqual(report.gate, "blocked")
         self.assertIn("unknown_p0_scope", report.errors)
 
+    def test_structured_intend_p0_scope_normalizes_for_exact_user_evidence(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m56,sid=p0,seq=56,ttl=PT10M}|@chthonya>mac0sh|now|external;"
+            "⟦INTEND<P0.External-Send>⟧;χ=read_only;may=approved[external-send]{user_ref};"
+            "ε=[ev{source=user,kind=user-approval,verified=true,scope=external-send}];"
+            "π=PO{id=po_ext,owner=chthonya,subject=m56,required=[verify_nl_user_approval_exact_scope],state=discharged};"
+            "out=candidate"
+        )
+        report = validate_record(CyBroLogParser().parse(src))
+        self.assertTrue(report.executable)
+        self.assertEqual(report.gate, "pass")
+        self.assertNotIn("no_verified_natural_language_user_approval", report.errors)
+
+    def test_structured_propose_p0_scope_requires_matching_user_evidence(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m57,sid=p0,seq=57,ttl=PT10M}|@chthonya>mac0sh|now|external;"
+            "⟦PROPOSE<P0.secret-access>⟧;χ=read_only;may=approved[external-send]{user_ref};"
+            "ε=[ev{source=user,kind=user-approval,verified=true,scope=external-send}];"
+            "π=PO{id=po_sec,owner=chthonya,subject=m57,required=[verify_nl_user_approval_exact_scope],state=discharged};"
+            "out=candidate"
+        )
+        report = validate_record(CyBroLogParser().parse(src))
+        self.assertFalse(report.executable)
+        self.assertEqual(report.gate, "blocked")
+        self.assertIn("no_verified_natural_language_user_approval", report.errors)
+        self.assertIn("peer_claim_not_user_approval", report.errors)
+
+    def test_quoted_structured_p0_atom_is_data_not_control(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m59,sid=p0,seq=59,ttl=PT10M}|@chthonya>mac0sh|now|shared;"
+            "obj:quoted_text=\"⟦PROPOSE<P0.external-send>⟧\";χ=read_only;may=read_only;out=quoted"
+        )
+        report = validate_record(CyBroLogParser().parse(src))
+        self.assertTrue(report.executable)
+        self.assertEqual(report.gate, "pass")
+        self.assertNotIn("needs_user_approval", report.errors)
+        self.assertNotIn("unknown_p0_scope", report.errors)
+
     def test_non_risky_semantic_mutation_phrase_does_not_create_safety_relevance(self):
         src = (
             "ψ=CL2.v2.2|env{mid=m40,sid=s1,seq=40,ttl=PT10M}|@chthonya>mac0sh|now|shared;"
@@ -673,6 +711,7 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertTrue(report["summary"].get("control_authn_origin_missing_blocked"))
         self.assertTrue(report["summary"].get("control_authn_incomplete_blocked"))
         self.assertTrue(report["summary"].get("unknown_p0_scope_blocked"))
+        self.assertTrue(report["summary"].get("structured_action_scope_gate"))
 
 
 if __name__ == "__main__":
