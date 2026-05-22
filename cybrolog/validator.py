@@ -335,6 +335,8 @@ def _validate_validation_adjunct(record: CyBroLogRecord, errors: list[str]) -> N
     src = vld.get("src")
     illoc = vld.get("illoc")
     authz = vld.get("authz")
+    src_norm = src.casefold() if isinstance(src, str) else src
+    illoc_norm = illoc.casefold() if isinstance(illoc, str) else illoc
     authz_norm = authz.casefold() if isinstance(authz, str) else authz
     risky_markers = set(_P0_RISKY_SCOPES) | {
         "write",
@@ -347,7 +349,7 @@ def _validate_validation_adjunct(record: CyBroLogRecord, errors: list[str]) -> N
         "approved",
         "authorization",
     }
-    if src == "peer" and illoc in {"approve", "approval"}:
+    if src_norm == "peer" and illoc_norm in {"approve", "approval"}:
         errors.append("peer_validation_not_user_approval")
     if isinstance(authz_norm, str) and authz_norm != "read":
         if authz_norm in risky_markers or any(marker in authz_norm for marker in risky_markers):
@@ -394,6 +396,7 @@ def run_benchmark_suite() -> dict[str, Any]:
         "ψ=CL2.v2.2|env{mid=b19,sid=p0,seq=19,ttl=P1D}|@chthonya>mac0sh|now|shared;χ=P0.unregistered-action;may=read_only;out=candidate",
         "ψ=CL2.v2.2|env{mid=b20,sid=p0,seq=20,ttl=P1D}|@chthonya>mac0sh|now|external;⟦PROPOSE<P0.secret-access>⟧;χ=read_only;may=approved[external-send]{user_ref};ε=[ev{source=user,kind=user-approval,verified=true,scope=external-send}];π=PO{id=po_sec,owner=chthonya,subject=b20,required=[verify_nl_user_approval_exact_scope],state=discharged};out=candidate",
         "ψ=CL2.v2.2|env{mid=b21,sid=p0,seq=21,ttl=P1D}|@chthonya>mac0sh|now|shared;obj:quoted_text=\"⟦PROPOSE<P0.external-send>⟧\";χ=read_only;may=read_only;out=quoted",
+        "ψ=CL2.v2.2|env{mid=b22,sid=vld,seq=22,ttl=P1D}|@mac0sh>chthonya|now|shared;vld{src=Peer,illoc=Approval,authz=read};χ=read_only;may=read_only;out=claimed",
     ]
     reports = [validate_record(parser.parse(c)) for c in cases]
     roundtrip_ok = all(r.parse_roundtrip for r in reports)
@@ -420,8 +423,11 @@ def run_benchmark_suite() -> dict[str, Any]:
         and reports[20].executable
         and "needs_user_approval" not in reports[20].errors
     )
+    mixed_case_peer_vld_approval_blocked = (
+        not reports[21].executable and "peer_validation_not_user_approval" in reports[21].errors
+    )
     no_permission_promotion = all("permission_promotion" not in r.errors for r in reports)
-    gate = "pass" if roundtrip_ok and payload_blocked and validation_adjunct_blocked and validation_authz_variant_blocked and mixed_case_p0_blocked and agentguard_peer_claim_blocked and may_spoof_blocked and mixed_case_payload_blocked and ambiguous_ev_blocked and p0_shared_wiki_mutation_blocked and dream_service_identity_blocked and operational_substrate_mutation_blocked and authn_route_contradiction_blocked and unauthorized_control_authn_actor_blocked and control_authn_origin_missing_blocked and control_authn_incomplete_blocked and unknown_p0_scope_blocked and structured_action_scope_gate and no_permission_promotion else "fail"
+    gate = "pass" if roundtrip_ok and payload_blocked and validation_adjunct_blocked and validation_authz_variant_blocked and mixed_case_p0_blocked and agentguard_peer_claim_blocked and may_spoof_blocked and mixed_case_payload_blocked and ambiguous_ev_blocked and p0_shared_wiki_mutation_blocked and dream_service_identity_blocked and operational_substrate_mutation_blocked and authn_route_contradiction_blocked and unauthorized_control_authn_actor_blocked and control_authn_origin_missing_blocked and control_authn_incomplete_blocked and unknown_p0_scope_blocked and structured_action_scope_gate and mixed_case_peer_vld_approval_blocked and no_permission_promotion else "fail"
     common = {
         "gate": gate,
         "metrics": {"ERc": 0, "SR": 1.0, "AR": 5, "RR": 5, "FR": 4, "PIR": 1.0, "FAPR": 0},
@@ -447,5 +453,6 @@ def run_benchmark_suite() -> dict[str, Any]:
             "control_authn_incomplete_blocked": control_authn_incomplete_blocked,
             "unknown_p0_scope_blocked": unknown_p0_scope_blocked,
             "structured_action_scope_gate": structured_action_scope_gate,
+            "mixed_case_peer_vld_approval_blocked": mixed_case_peer_vld_approval_blocked,
         },
     }

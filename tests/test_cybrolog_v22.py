@@ -584,6 +584,16 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertIn("peer_validation_not_user_approval", report.errors)
         self.assertIn("validation_adjunct_not_authorization", report.errors)
 
+    def test_validation_adjunct_mixed_case_peer_approval_does_not_authorize(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m60,sid=s1,seq=60,ttl=PT1H}|@mac0sh>chthonya|now|shared;"
+            "vld{src=Peer,illoc=Approval,authz=read};may=read_only;χ=read_only;out=claimed"
+        )
+        report = validate_record(CyBroLogParser().parse(src))
+        self.assertFalse(report.executable)
+        self.assertEqual(report.gate, "blocked")
+        self.assertIn("peer_validation_not_user_approval", report.errors)
+
     def test_validation_adjunct_tool_claim_does_not_authorize_write(self):
         src = (
             "ψ=CL2.v2.2|env{mid=m12,sid=s1,seq=12,ttl=PT1H}|@tool>chthonya|now|shared;"
@@ -712,6 +722,7 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertTrue(report["summary"].get("control_authn_incomplete_blocked"))
         self.assertTrue(report["summary"].get("unknown_p0_scope_blocked"))
         self.assertTrue(report["summary"].get("structured_action_scope_gate"))
+        self.assertTrue(report["summary"].get("mixed_case_peer_vld_approval_blocked"))
 
 
 if __name__ == "__main__":
