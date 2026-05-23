@@ -230,6 +230,30 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertEqual(ast.fields["obj:note"], "a\\;b")
         self.assertEqual(CyBroLogParser().parse(render_record(ast)).to_canonical(), ast.to_canonical())
 
+    def test_parser_rejects_malformed_route_identity(self):
+        malformed_routes = ["@>chthonya", "@chthonya>", "@", "@>", "@ >chthonya", "@chthonya> "]
+        for seq, route in enumerate(malformed_routes, start=61):
+            with self.subTest(route=route):
+                src = (
+                    f"ψ=CL2.v2.2|env{{mid=m{seq},sid=route,seq={seq},ttl=PT10M}}|"
+                    f"{route}|now|shared;χ=read_only;may=read_only;out=candidate"
+                )
+                with self.assertRaisesRegex(ValueError, "malformed_route_identity"):
+                    CyBroLogParser().parse(src)
+
+        valid_actor_recipient = (
+            "ψ=CL2.v2.2|env{mid=m67,sid=route,seq=67,ttl=PT10M}|"
+            "@chthonya>mac0sh|now|shared;χ=read_only;may=read_only;out=done"
+        )
+        valid_actor_only = (
+            "ψ=CL2.v2.2|env{mid=m68,sid=route,seq=68,ttl=PT10M}|"
+            "@chthonya|now|shared;χ=read_only;may=read_only;out=done"
+        )
+        self.assertEqual(CyBroLogParser().parse(valid_actor_recipient).actor, "chthonya")
+        self.assertEqual(CyBroLogParser().parse(valid_actor_recipient).recipient, "mac0sh")
+        self.assertEqual(CyBroLogParser().parse(valid_actor_only).actor, "chthonya")
+        self.assertIsNone(CyBroLogParser().parse(valid_actor_only).recipient)
+
     def test_parser_rejects_duplicate_top_level_fields(self):
         src = (
             "ψ=CL2.v2.2|env{mid=m30,sid=s1,seq=30,ttl=PT10M}|@peer>chthonya|now|external;"
@@ -723,6 +747,7 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertTrue(report["summary"].get("unknown_p0_scope_blocked"))
         self.assertTrue(report["summary"].get("structured_action_scope_gate"))
         self.assertTrue(report["summary"].get("mixed_case_peer_vld_approval_blocked"))
+        self.assertTrue(report["summary"].get("malformed_route_identity_blocked"))
 
 
 if __name__ == "__main__":

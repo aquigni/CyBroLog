@@ -6,6 +6,8 @@
 ψ=CL2.v2.2|env{mid=<id>,sid=<session>,seq=<n>,ttl=<duration>}|@actor>recipient|time|scope;field;field;...
 ```
 
+Route identity is strict in executable CL2 records: `actor` is mandatory and cannot be blank or whitespace-padded. If the `>` delimiter is present, `recipient` is also mandatory and cannot be blank or whitespace-padded. Actor-only routes such as `@chthonya|now|shared;...` remain valid when no explicit recipient is intended. Malformed routes such as `@>chthonya`, `@chthonya>`, `@`, and `@ >chthonya` fail before canonical AST/policy evaluation with `malformed_route_identity`.
+
 ## Common fields
 
 ```text
