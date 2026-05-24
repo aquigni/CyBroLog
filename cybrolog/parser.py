@@ -67,7 +67,7 @@ class CyBroLogParser:
         if idx >= len(parts) or not parts[idx].startswith("@"):
             raise ValueError("missing route")
         route = parts[idx][1:]
-        if route != route.strip() or not route:
+        if route != route.strip() or not route or route.count(">") > 1:
             raise ValueError("malformed_route_identity")
         if ">" in route:
             actor, recipient = route.split(">", 1)

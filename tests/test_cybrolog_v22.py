@@ -254,6 +254,14 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertEqual(CyBroLogParser().parse(valid_actor_only).actor, "chthonya")
         self.assertIsNone(CyBroLogParser().parse(valid_actor_only).recipient)
 
+    def test_parser_rejects_chained_route_identity(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m69,sid=route,seq=69,ttl=PT10M}|"
+            "@chthonya>mac0sh>debi0|now|shared;χ=read_only;may=read_only;out=candidate"
+        )
+        with self.assertRaisesRegex(ValueError, "malformed_route_identity"):
+            CyBroLogParser().parse(src)
+
     def test_parser_rejects_duplicate_top_level_fields(self):
         src = (
             "ψ=CL2.v2.2|env{mid=m30,sid=s1,seq=30,ttl=PT10M}|@peer>chthonya|now|external;"
@@ -748,6 +756,7 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertTrue(report["summary"].get("structured_action_scope_gate"))
         self.assertTrue(report["summary"].get("mixed_case_peer_vld_approval_blocked"))
         self.assertTrue(report["summary"].get("malformed_route_identity_blocked"))
+        self.assertTrue(report["summary"].get("chained_route_identity_blocked"))
 
 
 if __name__ == "__main__":

@@ -406,6 +406,13 @@ def run_benchmark_suite() -> dict[str, Any]:
         malformed_route_identity_blocked = False
     except ValueError as exc:
         malformed_route_identity_blocked = "malformed_route_identity" in str(exc)
+    try:
+        parser.parse(
+            "ψ=CL2.v2.2|env{mid=b24,sid=route,seq=24,ttl=P1D}|@chthonya>mac0sh>debi0|now|shared;χ=read_only;may=read_only;out=candidate"
+        )
+        chained_route_identity_blocked = False
+    except ValueError as exc:
+        chained_route_identity_blocked = "malformed_route_identity" in str(exc)
     roundtrip_ok = all(r.parse_roundtrip for r in reports)
     payload_blocked = not reports[1].executable and "payload_record_not_executable" in reports[1].errors
     validation_adjunct_blocked = not reports[4].executable and "validation_adjunct_not_authorization" in reports[4].errors
@@ -434,7 +441,7 @@ def run_benchmark_suite() -> dict[str, Any]:
         not reports[21].executable and "peer_validation_not_user_approval" in reports[21].errors
     )
     no_permission_promotion = all("permission_promotion" not in r.errors for r in reports)
-    gate = "pass" if roundtrip_ok and payload_blocked and validation_adjunct_blocked and validation_authz_variant_blocked and mixed_case_p0_blocked and agentguard_peer_claim_blocked and may_spoof_blocked and mixed_case_payload_blocked and ambiguous_ev_blocked and p0_shared_wiki_mutation_blocked and dream_service_identity_blocked and operational_substrate_mutation_blocked and authn_route_contradiction_blocked and unauthorized_control_authn_actor_blocked and control_authn_origin_missing_blocked and control_authn_incomplete_blocked and unknown_p0_scope_blocked and structured_action_scope_gate and mixed_case_peer_vld_approval_blocked and malformed_route_identity_blocked and no_permission_promotion else "fail"
+    gate = "pass" if roundtrip_ok and payload_blocked and validation_adjunct_blocked and validation_authz_variant_blocked and mixed_case_p0_blocked and agentguard_peer_claim_blocked and may_spoof_blocked and mixed_case_payload_blocked and ambiguous_ev_blocked and p0_shared_wiki_mutation_blocked and dream_service_identity_blocked and operational_substrate_mutation_blocked and authn_route_contradiction_blocked and unauthorized_control_authn_actor_blocked and control_authn_origin_missing_blocked and control_authn_incomplete_blocked and unknown_p0_scope_blocked and structured_action_scope_gate and mixed_case_peer_vld_approval_blocked and malformed_route_identity_blocked and chained_route_identity_blocked and no_permission_promotion else "fail"
     common = {
         "gate": gate,
         "metrics": {"ERc": 0, "SR": 1.0, "AR": 5, "RR": 5, "FR": 4, "PIR": 1.0, "FAPR": 0},
@@ -462,5 +469,6 @@ def run_benchmark_suite() -> dict[str, Any]:
             "structured_action_scope_gate": structured_action_scope_gate,
             "mixed_case_peer_vld_approval_blocked": mixed_case_peer_vld_approval_blocked,
             "malformed_route_identity_blocked": malformed_route_identity_blocked,
+            "chained_route_identity_blocked": chained_route_identity_blocked,
         },
     }
