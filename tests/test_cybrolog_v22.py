@@ -262,6 +262,81 @@ class CyBroLogV22Tests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "malformed_route_identity"):
             CyBroLogParser().parse(src)
 
+    def test_parser_accepts_lexical_route_identities(self):
+        routes = [
+            "@chthonya",
+            "@mac0sh",
+            "@external",
+            "@tool",
+            "@user",
+            "@swarm",
+            "@debi0",
+            "@agent3",
+            "@agent_3",
+            "@agent-3",
+            "@chthonya>mac0sh",
+        ]
+        for seq, route in enumerate(routes, start=70):
+            with self.subTest(route=route):
+                src = (
+                    f"ψ=CL2.v2.2|env{{mid=m{seq},sid=route,seq={seq},ttl=PT10M}}|"
+                    f"{route}|now|shared;χ=read_only;may=read_only;out=done"
+                )
+                ast = CyBroLogParser().parse(src)
+                self.assertTrue(ast.actor)
+
+    def test_parser_rejects_non_lexical_route_identities(self):
+        malformed_routes = [
+            "@0agent",
+            "@_agent",
+            "@-agent",
+            "@ch thonya",
+            "@chthonya local",
+            "@chthonya.local",
+            "@chthonya/mac0sh",
+            "@χθόνια",
+            "@макош",
+            "@chthonya>mac0sh.local",
+            "@chthonya>mac0sh/dev",
+            "@team{chthonya,mac0sh}",
+            "@chthonya,mac0sh",
+            "@chthonya;mac0sh",
+            "@chthonya[0]",
+            "@chthonya'q",
+            "@chthonya=q",
+            "@chthonya:root",
+        ]
+        for seq, route in enumerate(malformed_routes, start=81):
+            with self.subTest(route=route):
+                src = (
+                    f"ψ=CL2.v2.2|env{{mid=m{seq},sid=route,seq={seq},ttl=PT10M}}|"
+                    f"{route}|now|shared;χ=read_only;may=read_only;out=candidate"
+                )
+                with self.assertRaisesRegex(ValueError, "malformed_route_identity"):
+                    CyBroLogParser().parse(src)
+
+    def test_route_alias_fields_are_data_only(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m100,sid=route,seq=100,ttl=PT10M}|@chthonya>mac0sh|now|shared;"
+            "obj:route_alias=\"χθόνια.local\";obj:display_name=\"chthonya/server\";χ=read_only;may=read_only;out=done"
+        )
+        ast = CyBroLogParser().parse(src)
+        self.assertEqual(ast.actor, "chthonya")
+        self.assertEqual(ast.recipient, "mac0sh")
+        self.assertEqual(ast.fields["obj:route_alias"], "χθόνια.local")
+        self.assertEqual(ast.fields["obj:display_name"], "chthonya/server")
+        self.assertEqual(CyBroLogParser().parse(render_record(ast)).to_canonical(), ast.to_canonical())
+
+    def test_authn_origin_alias_does_not_match_route_actor(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m101,sid=route,seq=101,ttl=PT10M}|@chthonya|now|shared;"
+            "authn{origin=chthonya.local,channel=control,verified=true,trust=control_verified,executable=true};"
+            "χ=read_only;may=read_only;out=candidate"
+        )
+        report = validate_record(CyBroLogParser().parse(src))
+        self.assertFalse(report.executable)
+        self.assertIn("authn_origin_mismatch", report.errors)
+
     def test_parser_rejects_duplicate_top_level_fields(self):
         src = (
             "ψ=CL2.v2.2|env{mid=m30,sid=s1,seq=30,ttl=PT10M}|@peer>chthonya|now|external;"
@@ -757,6 +832,7 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertTrue(report["summary"].get("mixed_case_peer_vld_approval_blocked"))
         self.assertTrue(report["summary"].get("malformed_route_identity_blocked"))
         self.assertTrue(report["summary"].get("chained_route_identity_blocked"))
+        self.assertTrue(report["summary"].get("lexical_route_identity_blocked"))
 
 
 if __name__ == "__main__":

@@ -6,6 +6,7 @@ import re
 from typing import Any
 
 SUPPORTED_DIALECTS = {"CL2.v2.2", "CyBroLog.v2.2", "CyBroLog/CL2.v2.2"}
+_ROUTE_IDENTITY_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_-]*$")
 
 
 @dataclass
@@ -39,6 +40,10 @@ def _sort_obj(value: Any) -> Any:
     if isinstance(value, list):
         return [_sort_obj(v) for v in value]
     return value
+
+
+def _is_route_identity(value: str) -> bool:
+    return _ROUTE_IDENTITY_RE.fullmatch(value) is not None
 
 
 class CyBroLogParser:
@@ -75,6 +80,8 @@ class CyBroLogParser:
                 raise ValueError("malformed_route_identity")
         else:
             actor, recipient = route, None
+        if not _is_route_identity(actor) or (recipient is not None and not _is_route_identity(recipient)):
+            raise ValueError("malformed_route_identity")
         idx += 1
 
         time = parts[idx] if idx < len(parts) else None
