@@ -327,6 +327,54 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertEqual(ast.fields["obj:display_name"], "chthonya/server")
         self.assertEqual(CyBroLogParser().parse(render_record(ast)).to_canonical(), ast.to_canonical())
 
+    def test_parser_rejects_empty_top_level_field_keys(self):
+        malformed_fields = ["=x", ":x"]
+        for seq, field in enumerate(malformed_fields, start=102):
+            with self.subTest(field=field):
+                src = (
+                    f"ψ=CL2.v2.2|env{{mid=m{seq},sid=keys,seq={seq},ttl=PT10M}}|"
+                    f"@chthonya>mac0sh|now|shared;{field};χ=read_only;may=read_only;out=candidate"
+                )
+                with self.assertRaisesRegex(ValueError, "empty_field_key"):
+                    CyBroLogParser().parse(src)
+
+    def test_parser_rejects_empty_braced_object_keys(self):
+        malformed_objects = [
+            (
+                "ψ=CL2.v2.2|env{=x,sid=keys,seq=104,ttl=PT10M}|"
+                "@chthonya>mac0sh|now|shared;χ=read_only;may=read_only;out=candidate",
+                "empty_object_key:env",
+            ),
+            (
+                "ψ=CL2.v2.2|env{mid=m105,sid=keys,seq=105,ttl=PT10M}|@chthonya>mac0sh|now|shared;"
+                "obj{=x};χ=read_only;may=read_only;out=candidate",
+                "empty_object_key:obj",
+            ),
+            (
+                "ψ=CL2.v2.2|env{mid=m106,sid=keys,seq=106,ttl=PT10M}|@chthonya>mac0sh|now|shared;"
+                "obj{flag,};χ=read_only;may=read_only;out=candidate",
+                "empty_object_key:obj",
+            ),
+            (
+                "ψ=CL2.v2.2|env{mid=m107,sid=keys,seq=107,ttl=PT10M}|@chthonya>mac0sh|now|shared;"
+                "obj{flag,,other};χ=read_only;may=read_only;out=candidate",
+                "empty_object_key:obj",
+            ),
+        ]
+        for src, error in malformed_objects:
+            with self.subTest(error=error):
+                with self.assertRaisesRegex(ValueError, error):
+                    CyBroLogParser().parse(src)
+
+    def test_parser_allows_empty_quoted_values_with_nonempty_keys(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m108,sid=keys,seq=108,ttl=PT10M}|@chthonya>mac0sh|now|shared;"
+            "obj:note=\"\";χ=read_only;may=read_only;out=done"
+        )
+        ast = CyBroLogParser().parse(src)
+        self.assertEqual(ast.fields["obj:note"], "")
+        self.assertEqual(CyBroLogParser().parse(render_record(ast)).to_canonical(), ast.to_canonical())
+
     def test_authn_origin_alias_does_not_match_route_actor(self):
         src = (
             "ψ=CL2.v2.2|env{mid=m101,sid=route,seq=101,ttl=PT10M}|@chthonya|now|shared;"
@@ -833,6 +881,8 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertTrue(report["summary"].get("malformed_route_identity_blocked"))
         self.assertTrue(report["summary"].get("chained_route_identity_blocked"))
         self.assertTrue(report["summary"].get("lexical_route_identity_blocked"))
+        self.assertTrue(report["summary"].get("empty_field_key_blocked"))
+        self.assertTrue(report["summary"].get("empty_object_key_blocked"))
 
 
 if __name__ == "__main__":

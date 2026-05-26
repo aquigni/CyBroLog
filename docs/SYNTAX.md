@@ -45,6 +45,7 @@ out=<state>
 ## Delimiters
 
 Values containing `; | = : [ ] { } "` or newlines must be JSON strings.
+Top-level field keys and keys inside braced objects must be non-empty after trimming whitespace. Empty-key forms such as `=x`, `:x`, `env{=x}`, `obj{=x}`, `obj{flag,}`, and `obj{flag,,other}` fail before canonical AST/policy evaluation with `empty_field_key` or `empty_object_key:<object>`. Empty quoted values remain valid when the key is explicit, for example `obj:note=""`.
 
 ```text
 obj:note="a;b|c=d [x] {y}: z"

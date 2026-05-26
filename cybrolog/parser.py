@@ -95,6 +95,8 @@ class CyBroLogParser:
         atoms: list[str] = []
 
         def set_field(key: str, value: Any) -> None:
+            if not key:
+                raise ValueError("empty_field_key")
             if key in fields:
                 raise ValueError(f"duplicate_field:{key}")
             fields[key] = value
@@ -198,18 +200,24 @@ def _parse_braced(text: str, name: str) -> dict[str, Any]:
         raise ValueError(f"malformed {name} object")
     inner = text[len(prefix):-1]
     out: dict[str, Any] = {}
+    if not inner.strip():
+        return out
     for item in _split_top(inner, ","):
         item = item.strip()
         if not item:
-            continue
+            raise ValueError(f"empty_object_key:{name}")
         if "=" in item:
             k, v = item.split("=", 1)
             key = k.strip()
+            if not key:
+                raise ValueError(f"empty_object_key:{name}")
             if key in out:
                 raise ValueError(f"duplicate_object_key:{name}.{key}")
             out[key] = _parse_value(v.strip())
         else:
             key = item.strip()
+            if not key:
+                raise ValueError(f"empty_object_key:{name}")
             if key in out:
                 raise ValueError(f"duplicate_object_key:{name}.{key}")
             out[key] = True
