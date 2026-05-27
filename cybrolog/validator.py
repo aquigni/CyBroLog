@@ -439,6 +439,18 @@ def run_benchmark_suite() -> dict[str, Any]:
         except ValueError as exc:
             empty_object_key_results.append("empty_object_key:" in str(exc))
     empty_object_key_blocked = all(empty_object_key_results)
+    lexical_field_key_probes = [
+        "ψ=CL2.v2.2|env{mid=b30,sid=keys,seq=30,ttl=P1D}|@chthonya>mac0sh|now|shared;bad key=x;χ=read_only;may=read_only;out=candidate",
+        "ψ=CL2.v2.2|env{bad.key=x,sid=keys,seq=31,ttl=P1D}|@chthonya>mac0sh|now|shared;χ=read_only;may=read_only;out=candidate",
+    ]
+    lexical_field_key_results: list[bool] = []
+    for probe in lexical_field_key_probes:
+        try:
+            parser.parse(probe)
+            lexical_field_key_results.append(False)
+        except ValueError as exc:
+            lexical_field_key_results.append("malformed_field_key" in str(exc) or "malformed_object_key:" in str(exc))
+    lexical_field_key_blocked = all(lexical_field_key_results)
     route_alias_record = validate_record(
         parser.parse(
             "ψ=CL2.v2.2|env{mid=b26,sid=route,seq=26,ttl=P1D}|@chthonya>mac0sh|now|shared;"
@@ -474,7 +486,7 @@ def run_benchmark_suite() -> dict[str, Any]:
         not reports[21].executable and "peer_validation_not_user_approval" in reports[21].errors
     )
     no_permission_promotion = all("permission_promotion" not in r.errors for r in reports)
-    gate = "pass" if roundtrip_ok and payload_blocked and validation_adjunct_blocked and validation_authz_variant_blocked and mixed_case_p0_blocked and agentguard_peer_claim_blocked and may_spoof_blocked and mixed_case_payload_blocked and ambiguous_ev_blocked and p0_shared_wiki_mutation_blocked and dream_service_identity_blocked and operational_substrate_mutation_blocked and authn_route_contradiction_blocked and unauthorized_control_authn_actor_blocked and control_authn_origin_missing_blocked and control_authn_incomplete_blocked and unknown_p0_scope_blocked and structured_action_scope_gate and mixed_case_peer_vld_approval_blocked and malformed_route_identity_blocked and chained_route_identity_blocked and lexical_route_identity_blocked and empty_field_key_blocked and empty_object_key_blocked and route_alias_data_only and no_permission_promotion else "fail"
+    gate = "pass" if roundtrip_ok and payload_blocked and validation_adjunct_blocked and validation_authz_variant_blocked and mixed_case_p0_blocked and agentguard_peer_claim_blocked and may_spoof_blocked and mixed_case_payload_blocked and ambiguous_ev_blocked and p0_shared_wiki_mutation_blocked and dream_service_identity_blocked and operational_substrate_mutation_blocked and authn_route_contradiction_blocked and unauthorized_control_authn_actor_blocked and control_authn_origin_missing_blocked and control_authn_incomplete_blocked and unknown_p0_scope_blocked and structured_action_scope_gate and mixed_case_peer_vld_approval_blocked and malformed_route_identity_blocked and chained_route_identity_blocked and lexical_route_identity_blocked and empty_field_key_blocked and empty_object_key_blocked and lexical_field_key_blocked and route_alias_data_only and no_permission_promotion else "fail"
     common = {
         "gate": gate,
         "metrics": {"ERc": 0, "SR": 1.0, "AR": 5, "RR": 5, "FR": 4, "PIR": 1.0, "FAPR": 0},
@@ -506,6 +518,7 @@ def run_benchmark_suite() -> dict[str, Any]:
             "lexical_route_identity_blocked": lexical_route_identity_blocked,
             "empty_field_key_blocked": empty_field_key_blocked,
             "empty_object_key_blocked": empty_object_key_blocked,
+            "lexical_field_key_blocked": lexical_field_key_blocked,
             "route_alias_data_only": route_alias_data_only,
         },
     }

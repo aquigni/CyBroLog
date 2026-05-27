@@ -7,6 +7,8 @@ from typing import Any
 
 SUPPORTED_DIALECTS = {"CL2.v2.2", "CyBroLog.v2.2", "CyBroLog/CL2.v2.2"}
 _ROUTE_IDENTITY_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_-]*$")
+_FIELD_KEY_SEGMENT = r"(?:[A-Za-z_][A-Za-z0-9_-]*|[α-ωΑ-Ωπχγεηοκρσμψ]+)"
+_FIELD_KEY_RE = re.compile(rf"^{_FIELD_KEY_SEGMENT}(?::{_FIELD_KEY_SEGMENT})*$")
 
 
 @dataclass
@@ -44,6 +46,10 @@ def _sort_obj(value: Any) -> Any:
 
 def _is_route_identity(value: str) -> bool:
     return _ROUTE_IDENTITY_RE.fullmatch(value) is not None
+
+
+def _is_field_key(value: str) -> bool:
+    return _FIELD_KEY_RE.fullmatch(value) is not None
 
 
 class CyBroLogParser:
@@ -97,6 +103,8 @@ class CyBroLogParser:
         def set_field(key: str, value: Any) -> None:
             if not key:
                 raise ValueError("empty_field_key")
+            if not _is_field_key(key):
+                raise ValueError(f"malformed_field_key:{key}")
             if key in fields:
                 raise ValueError(f"duplicate_field:{key}")
             fields[key] = value
@@ -211,6 +219,8 @@ def _parse_braced(text: str, name: str) -> dict[str, Any]:
             key = k.strip()
             if not key:
                 raise ValueError(f"empty_object_key:{name}")
+            if not _is_field_key(key):
+                raise ValueError(f"malformed_object_key:{name}.{key}")
             if key in out:
                 raise ValueError(f"duplicate_object_key:{name}.{key}")
             out[key] = _parse_value(v.strip())
@@ -218,6 +228,8 @@ def _parse_braced(text: str, name: str) -> dict[str, Any]:
             key = item.strip()
             if not key:
                 raise ValueError(f"empty_object_key:{name}")
+            if not _is_field_key(key):
+                raise ValueError(f"malformed_object_key:{name}.{key}")
             if key in out:
                 raise ValueError(f"duplicate_object_key:{name}.{key}")
             out[key] = True

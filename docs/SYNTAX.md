@@ -45,7 +45,7 @@ out=<state>
 ## Delimiters
 
 Values containing `; | = : [ ] { } "` or newlines must be JSON strings.
-Top-level field keys and keys inside braced objects must be non-empty after trimming whitespace. Empty-key forms such as `=x`, `:x`, `env{=x}`, `obj{=x}`, `obj{flag,}`, and `obj{flag,,other}` fail before canonical AST/policy evaluation with `empty_field_key` or `empty_object_key:<object>`. Empty quoted values remain valid when the key is explicit, for example `obj:note=""`.
+Top-level field keys and keys inside braced objects must be non-empty after trimming whitespace. Empty-key forms such as `=x`, `:x`, `env{=x}`, `obj{=x}`, `obj{flag,}`, and `obj{flag,,other}` fail before canonical AST/policy evaluation with `empty_field_key` or `empty_object_key:<object>`. Field-key syntax is also lexical: each segment must match `[A-Za-z_][A-Za-z0-9_-]*` or a Greek operator segment, and top-level namespace keys may join lexical segments with `:` as in `obj:note`. Non-token control-key forms such as `bad key=x`, `obj.note=x`, `obj/note=x`, `env{bad key=x}`, or `obj{bad.key=x}` fail before canonical AST/policy evaluation with `malformed_field_key:<key>` or `malformed_object_key:<object>.<key>`. Empty quoted values remain valid when the key is explicit, for example `obj:note=""`.
 
 ```text
 obj:note="a;b|c=d [x] {y}: z"
