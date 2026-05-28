@@ -42,6 +42,8 @@ may=denied|read_only|approved[scope]{ref}|blocked[reason]
 out=<state>
 ```
 
+`may=approved[scope]{ref}` is approval-shaped only when both `scope` and `ref` are lexical tokens: `scope` uses lowercase `[a-z0-9_-]+`, and `ref` uses `[A-Za-z_][A-Za-z0-9_-]*`. The `ref` must name a matching `ε` evidence item with `id=<ref>`, `source=user`, an allowed natural-language user-approval kind, `verified=true`, and exact `scope=<scope>`. Peer claims, dangling refs, or delimiter-bearing refs remain non-authoritative and fail closed.
+
 ## Delimiters
 
 Values containing `; | = : [ ] { } "` or newlines must be JSON strings.

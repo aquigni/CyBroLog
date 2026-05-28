@@ -562,7 +562,7 @@ class CyBroLogV22Tests(unittest.TestCase):
         src = (
             "ψ=CL2.v2.2|env{mid=m56,sid=p0,seq=56,ttl=PT10M}|@chthonya>mac0sh|now|external;"
             "⟦INTEND<P0.External-Send>⟧;χ=read_only;may=approved[external-send]{user_ref};"
-            "ε=[ev{source=user,kind=user-approval,verified=true,scope=external-send}];"
+            "ε=[ev{id=user_ref,source=user,kind=user-approval,verified=true,scope=external-send}];"
             "π=PO{id=po_ext,owner=chthonya,subject=m56,required=[verify_nl_user_approval_exact_scope],state=discharged};"
             "out=candidate"
         )
@@ -621,7 +621,7 @@ class CyBroLogV22Tests(unittest.TestCase):
             "ψ=CL2.v2.2|env{mid=m19,sid=s1,seq=19,ttl=PT10M}|@chthonya>mac0sh|now|external;"
             "⟦INTEND<external-send>⟧;obj:channel=telegram;"
             "may=approved[external-send]{user_ref};χ=P0.external-send;"
-            "ε=[ev{source=user,kind=user-approval,verified=true,scope=external-send}];"
+            "ε=[ev{id=user_ref,source=user,kind=user-approval,verified=true,scope=external-send}];"
             "π=PO{id=po_ext,owner=chthonya,subject=m19,required=[verify_nl_user_approval_exact_scope],state=discharged};"
             "out=candidate"
         )
@@ -634,13 +634,41 @@ class CyBroLogV22Tests(unittest.TestCase):
             "ψ=CL2.v2.2|env{mid=m20,sid=s1,seq=20,ttl=PT10M}|@chthonya>mac0sh|now|external;"
             "⟦INTEND<external-send>⟧;obj:channel=telegram;"
             "may=approved[external-send]{user_ref};χ=P0.external-send;"
-            "ε=[ev{source=user,kind=user_approval,verified=true,scope=external-send}];"
+            "ε=[ev{id=user_ref,source=user,kind=user_approval,verified=true,scope=external-send}];"
             "π=PO{id=po_ext,owner=chthonya,subject=m20,required=[verify_nl_user_approval_exact_scope],state=discharged};"
             "out=candidate"
         )
         report = validate_record(CyBroLogParser().parse(src))
         self.assertTrue(report.executable)
         self.assertEqual(report.gate, "pass")
+
+    def test_p0_approved_requires_matching_evidence_ref(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m61,sid=s1,seq=61,ttl=PT10M}|@chthonya>mac0sh|now|external;"
+            "⟦INTEND<external-send>⟧;obj:channel=telegram;"
+            "may=approved[external-send]{user_ref};χ=P0.external-send;"
+            "ε=[ev{id=other_ref,source=user,kind=user-approval,verified=true,scope=external-send}];"
+            "π=PO{id=po_ext,owner=chthonya,subject=m61,required=[verify_nl_user_approval_exact_scope],state=discharged};"
+            "out=candidate"
+        )
+        report = validate_record(CyBroLogParser().parse(src))
+        self.assertFalse(report.executable)
+        self.assertEqual(report.gate, "blocked")
+        self.assertIn("no_verified_natural_language_user_approval", report.errors)
+
+    def test_p0_approved_rejects_non_lexical_evidence_ref(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m62,sid=s1,seq=62,ttl=PT10M}|@chthonya>mac0sh|now|external;"
+            "⟦INTEND<external-send>⟧;obj:channel=telegram;"
+            "may=approved[external-send]{user ref};χ=P0.external-send;"
+            "ε=[ev{id=user_ref,source=user,kind=user-approval,verified=true,scope=external-send}];"
+            "π=PO{id=po_ext,owner=chthonya,subject=m62,required=[verify_nl_user_approval_exact_scope],state=discharged};"
+            "out=candidate"
+        )
+        report = validate_record(CyBroLogParser().parse(src))
+        self.assertFalse(report.executable)
+        self.assertEqual(report.gate, "blocked")
+        self.assertIn("needs_user_approval", report.errors)
 
     def test_p0_approved_with_spoofed_user_approval_kind_blocks(self):
         spoofed_kinds = [
@@ -923,6 +951,7 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertTrue(report["summary"].get("empty_field_key_blocked"))
         self.assertTrue(report["summary"].get("empty_object_key_blocked"))
         self.assertTrue(report["summary"].get("lexical_field_key_blocked"))
+        self.assertTrue(report["summary"].get("approval_ref_binding_blocked"))
 
 
 if __name__ == "__main__":

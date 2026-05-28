@@ -201,20 +201,29 @@ def _validate_p0(record: CyBroLogRecord, errors: list[str]) -> None:
     if not risky:
         return
     may = str(record.fields.get("may", ""))
-    if _may_is_exact_approval(may):
-        if not _has_verified_natural_language_user_approval(record.fields.get("ε"), _required_approval_scopes(record)):
+    approval = _parse_may_approval_token(may)
+    if approval is not None:
+        _, approval_ref = approval
+        if not _has_verified_natural_language_user_approval(record.fields.get("ε"), _required_approval_scopes(record), approval_ref):
             errors.append("peer_claim_not_user_approval")
             errors.append("no_verified_natural_language_user_approval")
     else:
         errors.append("needs_user_approval")
 
 
+def _parse_may_approval_token(may: str) -> tuple[str, str] | None:
+    match = re.fullmatch(r"approved\[([a-z0-9_-]+)\]\{([A-Za-z_][A-Za-z0-9_-]*)\}", may)
+    if match is None:
+        return None
+    return match.group(1), match.group(2)
+
+
 def _may_is_exact_approval(may: str) -> bool:
     """Accept only the canonical single approval token, not prefix/suffix spoofs."""
-    return re.fullmatch(r"approved\[[a-z0-9_-]+\]\{[^{}]+\}", may) is not None
+    return _parse_may_approval_token(may) is not None
 
 
-def _has_verified_natural_language_user_approval(evidence: Any, required_scopes: set[str]) -> bool:
+def _has_verified_natural_language_user_approval(evidence: Any, required_scopes: set[str], approval_ref: str) -> bool:
     """Return true only for explicit, verified, exact-scope user approval evidence.
 
     Substrings such as `source=user` or `user_approval` are insufficient: P0
@@ -231,6 +240,7 @@ def _has_verified_natural_language_user_approval(evidence: Any, required_scopes:
     for item in items:
         if isinstance(item, dict):
             source = item.get("source")
+            evidence_id = item.get("id")
             kind = item.get("kind")
             verified = item.get("verified")
             scope = item.get("scope")
@@ -240,6 +250,7 @@ def _has_verified_natural_language_user_approval(evidence: Any, required_scopes:
             except ValueError:
                 continue
             source = parsed_ev.get("source")
+            evidence_id = parsed_ev.get("id")
             kind = parsed_ev.get("kind")
             verified = parsed_ev.get("verified")
             scope = parsed_ev.get("scope")
@@ -247,6 +258,7 @@ def _has_verified_natural_language_user_approval(evidence: Any, required_scopes:
             continue
         if (
             source == "user"
+            and evidence_id == approval_ref
             and kind in _USER_APPROVAL_EVIDENCE_KINDS
             and verified is True
             and isinstance(scope, str)
@@ -259,8 +271,9 @@ def _has_verified_natural_language_user_approval(evidence: Any, required_scopes:
 def _required_approval_scopes(record: CyBroLogRecord) -> set[str]:
     scopes: set[str] = set()
     may = str(record.fields.get("may", ""))
-    if "approved[" in may and "]" in may:
-        scopes.add(may.split("approved[", 1)[1].split("]", 1)[0])
+    approval = _parse_may_approval_token(may)
+    if approval is not None:
+        scopes.add(approval[0])
     chi = str(record.fields.get("χ", ""))
     for scope in re.findall(r"P0\.([A-Za-z0-9_-]+)", chi, flags=re.IGNORECASE):
         scopes.add(scope.casefold())
@@ -397,6 +410,7 @@ def run_benchmark_suite() -> dict[str, Any]:
         "ψ=CL2.v2.2|env{mid=b20,sid=p0,seq=20,ttl=P1D}|@chthonya>mac0sh|now|external;⟦PROPOSE<P0.secret-access>⟧;χ=read_only;may=approved[external-send]{user_ref};ε=[ev{source=user,kind=user-approval,verified=true,scope=external-send}];π=PO{id=po_sec,owner=chthonya,subject=b20,required=[verify_nl_user_approval_exact_scope],state=discharged};out=candidate",
         "ψ=CL2.v2.2|env{mid=b21,sid=p0,seq=21,ttl=P1D}|@chthonya>mac0sh|now|shared;obj:quoted_text=\"⟦PROPOSE<P0.external-send>⟧\";χ=read_only;may=read_only;out=quoted",
         "ψ=CL2.v2.2|env{mid=b22,sid=vld,seq=22,ttl=P1D}|@mac0sh>chthonya|now|shared;vld{src=Peer,illoc=Approval,authz=read};χ=read_only;may=read_only;out=claimed",
+        "ψ=CL2.v2.2|env{mid=b32,sid=p0,seq=32,ttl=P1D}|@chthonya>mac0sh|now|external;⟦INTEND<external-send>⟧;may=approved[external-send]{user_ref};χ=P0.external-send;ε=[ev{id=other_ref,source=user,kind=user-approval,verified=true,scope=external-send}];π=PO{id=po_ext,owner=chthonya,subject=b32,required=[verify_nl_user_approval_exact_scope],state=discharged};out=candidate",
     ]
     reports = [validate_record(parser.parse(c)) for c in cases]
     try:
@@ -485,8 +499,11 @@ def run_benchmark_suite() -> dict[str, Any]:
     mixed_case_peer_vld_approval_blocked = (
         not reports[21].executable and "peer_validation_not_user_approval" in reports[21].errors
     )
+    approval_ref_binding_blocked = (
+        not reports[22].executable and "no_verified_natural_language_user_approval" in reports[22].errors
+    )
     no_permission_promotion = all("permission_promotion" not in r.errors for r in reports)
-    gate = "pass" if roundtrip_ok and payload_blocked and validation_adjunct_blocked and validation_authz_variant_blocked and mixed_case_p0_blocked and agentguard_peer_claim_blocked and may_spoof_blocked and mixed_case_payload_blocked and ambiguous_ev_blocked and p0_shared_wiki_mutation_blocked and dream_service_identity_blocked and operational_substrate_mutation_blocked and authn_route_contradiction_blocked and unauthorized_control_authn_actor_blocked and control_authn_origin_missing_blocked and control_authn_incomplete_blocked and unknown_p0_scope_blocked and structured_action_scope_gate and mixed_case_peer_vld_approval_blocked and malformed_route_identity_blocked and chained_route_identity_blocked and lexical_route_identity_blocked and empty_field_key_blocked and empty_object_key_blocked and lexical_field_key_blocked and route_alias_data_only and no_permission_promotion else "fail"
+    gate = "pass" if roundtrip_ok and payload_blocked and validation_adjunct_blocked and validation_authz_variant_blocked and mixed_case_p0_blocked and agentguard_peer_claim_blocked and may_spoof_blocked and mixed_case_payload_blocked and ambiguous_ev_blocked and p0_shared_wiki_mutation_blocked and dream_service_identity_blocked and operational_substrate_mutation_blocked and authn_route_contradiction_blocked and unauthorized_control_authn_actor_blocked and control_authn_origin_missing_blocked and control_authn_incomplete_blocked and unknown_p0_scope_blocked and structured_action_scope_gate and mixed_case_peer_vld_approval_blocked and approval_ref_binding_blocked and malformed_route_identity_blocked and chained_route_identity_blocked and lexical_route_identity_blocked and empty_field_key_blocked and empty_object_key_blocked and lexical_field_key_blocked and route_alias_data_only and no_permission_promotion else "fail"
     common = {
         "gate": gate,
         "metrics": {"ERc": 0, "SR": 1.0, "AR": 5, "RR": 5, "FR": 4, "PIR": 1.0, "FAPR": 0},
@@ -519,6 +536,7 @@ def run_benchmark_suite() -> dict[str, Any]:
             "empty_field_key_blocked": empty_field_key_blocked,
             "empty_object_key_blocked": empty_object_key_blocked,
             "lexical_field_key_blocked": lexical_field_key_blocked,
+            "approval_ref_binding_blocked": approval_ref_binding_blocked,
             "route_alias_data_only": route_alias_data_only,
         },
     }
