@@ -953,6 +953,10 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertTrue(report["summary"].get("lexical_field_key_blocked"))
         self.assertTrue(report["summary"].get("approval_ref_binding_blocked"))
 
+    def test_benchmark_suite_tracks_unsupported_dialect_blocked(self):
+        report = run_benchmark_suite()
+        self.assertTrue(report["summary"].get("unsupported_dialect_blocked"))
+
 
 if __name__ == "__main__":
     unittest.main()

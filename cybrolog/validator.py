@@ -411,6 +411,7 @@ def run_benchmark_suite() -> dict[str, Any]:
         "ψ=CL2.v2.2|env{mid=b21,sid=p0,seq=21,ttl=P1D}|@chthonya>mac0sh|now|shared;obj:quoted_text=\"⟦PROPOSE<P0.external-send>⟧\";χ=read_only;may=read_only;out=quoted",
         "ψ=CL2.v2.2|env{mid=b22,sid=vld,seq=22,ttl=P1D}|@mac0sh>chthonya|now|shared;vld{src=Peer,illoc=Approval,authz=read};χ=read_only;may=read_only;out=claimed",
         "ψ=CL2.v2.2|env{mid=b32,sid=p0,seq=32,ttl=P1D}|@chthonya>mac0sh|now|external;⟦INTEND<external-send>⟧;may=approved[external-send]{user_ref};χ=P0.external-send;ε=[ev{id=other_ref,source=user,kind=user-approval,verified=true,scope=external-send}];π=PO{id=po_ext,owner=chthonya,subject=b32,required=[verify_nl_user_approval_exact_scope],state=discharged};out=candidate",
+        "ψ=CL2.v2.3|env{mid=b33,sid=dialect,seq=33,ttl=P1D}|@chthonya>mac0sh|now|shared;χ=read_only;may=read_only;out=done",
     ]
     reports = [validate_record(parser.parse(c)) for c in cases]
     try:
@@ -502,8 +503,14 @@ def run_benchmark_suite() -> dict[str, Any]:
     approval_ref_binding_blocked = (
         not reports[22].executable and "no_verified_natural_language_user_approval" in reports[22].errors
     )
+    unsupported_dialect_blocked = (
+        reports[23].parse_roundtrip
+        and not reports[23].executable
+        and reports[23].gate == "blocked"
+        and reports[23].errors == ["unsupported_dialect"]
+    )
     no_permission_promotion = all("permission_promotion" not in r.errors for r in reports)
-    gate = "pass" if roundtrip_ok and payload_blocked and validation_adjunct_blocked and validation_authz_variant_blocked and mixed_case_p0_blocked and agentguard_peer_claim_blocked and may_spoof_blocked and mixed_case_payload_blocked and ambiguous_ev_blocked and p0_shared_wiki_mutation_blocked and dream_service_identity_blocked and operational_substrate_mutation_blocked and authn_route_contradiction_blocked and unauthorized_control_authn_actor_blocked and control_authn_origin_missing_blocked and control_authn_incomplete_blocked and unknown_p0_scope_blocked and structured_action_scope_gate and mixed_case_peer_vld_approval_blocked and approval_ref_binding_blocked and malformed_route_identity_blocked and chained_route_identity_blocked and lexical_route_identity_blocked and empty_field_key_blocked and empty_object_key_blocked and lexical_field_key_blocked and route_alias_data_only and no_permission_promotion else "fail"
+    gate = "pass" if roundtrip_ok and payload_blocked and validation_adjunct_blocked and validation_authz_variant_blocked and mixed_case_p0_blocked and agentguard_peer_claim_blocked and may_spoof_blocked and mixed_case_payload_blocked and ambiguous_ev_blocked and p0_shared_wiki_mutation_blocked and dream_service_identity_blocked and operational_substrate_mutation_blocked and authn_route_contradiction_blocked and unauthorized_control_authn_actor_blocked and control_authn_origin_missing_blocked and control_authn_incomplete_blocked and unknown_p0_scope_blocked and structured_action_scope_gate and mixed_case_peer_vld_approval_blocked and approval_ref_binding_blocked and unsupported_dialect_blocked and malformed_route_identity_blocked and chained_route_identity_blocked and lexical_route_identity_blocked and empty_field_key_blocked and empty_object_key_blocked and lexical_field_key_blocked and route_alias_data_only and no_permission_promotion else "fail"
     common = {
         "gate": gate,
         "metrics": {"ERc": 0, "SR": 1.0, "AR": 5, "RR": 5, "FR": 4, "PIR": 1.0, "FAPR": 0},
@@ -537,6 +544,7 @@ def run_benchmark_suite() -> dict[str, Any]:
             "empty_object_key_blocked": empty_object_key_blocked,
             "lexical_field_key_blocked": lexical_field_key_blocked,
             "approval_ref_binding_blocked": approval_ref_binding_blocked,
+            "unsupported_dialect_blocked": unsupported_dialect_blocked,
             "route_alias_data_only": route_alias_data_only,
         },
     }
