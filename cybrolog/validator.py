@@ -77,6 +77,7 @@ def validate_record(record: CyBroLogRecord) -> ValidationReport:
     _validate_absence(record, errors)
     _validate_aggregation(record, errors)
     _validate_validation_adjunct(record, errors)
+    _validate_executor_input_boundary(record, errors)
 
     if not parse_roundtrip:
         errors.append("roundtrip_not_proven")
@@ -371,6 +372,33 @@ def _validate_validation_adjunct(record: CyBroLogRecord, errors: list[str]) -> N
         errors.append("validation_read_without_read_only_gate")
 
 
+def _validate_executor_input_boundary(record: CyBroLogRecord, errors: list[str]) -> None:
+    """Reserve `out=executor_input` for records with explicit boundary evidence.
+
+    The phrase is an invariant boundary, not an ordinary output label: executor
+    input is only validated after canonical AST round-trip, a passing policy
+    result ledger, and a discharged proof obligation are all represented in the
+    AST. This helper does not grant permission; it only blocks ambiguous claims.
+    """
+    if record.fields.get("out") != "executor_input":
+        return
+    val = record.fields.get("val")
+    po = record.fields.get("π") or record.fields.get("pi")
+    checks = val.get("checks") if isinstance(val, dict) else None
+    check_set = {str(item) for item in checks} if isinstance(checks, list) else set()
+    required_checks = {"canonical_ast", "policy_result", "required_po_discharged"}
+    validated = (
+        isinstance(val, dict)
+        and val.get("subject") == "executor_input"
+        and val.get("result") == "pass"
+        and required_checks.issubset(check_set)
+        and isinstance(po, dict)
+        and po.get("state") == "discharged"
+    )
+    if not validated:
+        errors.append("executor_input_boundary_unvalidated")
+
+
 def _po_discharged_or_readonly(record: CyBroLogRecord) -> bool:
     may = str(record.fields.get("may", ""))
     if may == "read_only":
@@ -412,6 +440,8 @@ def run_benchmark_suite() -> dict[str, Any]:
         "ψ=CL2.v2.2|env{mid=b22,sid=vld,seq=22,ttl=P1D}|@mac0sh>chthonya|now|shared;vld{src=Peer,illoc=Approval,authz=read};χ=read_only;may=read_only;out=claimed",
         "ψ=CL2.v2.2|env{mid=b32,sid=p0,seq=32,ttl=P1D}|@chthonya>mac0sh|now|external;⟦INTEND<external-send>⟧;may=approved[external-send]{user_ref};χ=P0.external-send;ε=[ev{id=other_ref,source=user,kind=user-approval,verified=true,scope=external-send}];π=PO{id=po_ext,owner=chthonya,subject=b32,required=[verify_nl_user_approval_exact_scope],state=discharged};out=candidate",
         "ψ=CL2.v2.3|env{mid=b33,sid=dialect,seq=33,ttl=P1D}|@chthonya>mac0sh|now|shared;χ=read_only;may=read_only;out=done",
+        "ψ=CL2.v2.2|env{mid=b34,sid=exec,seq=34,ttl=P1D}|@chthonya>mac0sh|now|shared;χ=read_only;may=read_only;out=executor_input",
+        "ψ=CL2.v2.2|env{mid=b35,sid=exec,seq=35,ttl=P1D}|@chthonya>mac0sh|now|shared;val{id=val_exec,subject=executor_input,checks=[canonical_ast,policy_result,required_po_discharged],result=pass};χ=read_only;may=read_only;π=PO{id=po_exec,owner=chthonya,subject=b35,required=[canonical_ast,policy_result,required_po_discharged],state=discharged};out=executor_input",
     ]
     reports = [validate_record(parser.parse(c)) for c in cases]
     try:
@@ -509,8 +539,14 @@ def run_benchmark_suite() -> dict[str, Any]:
         and reports[23].gate == "blocked"
         and reports[23].errors == ["unsupported_dialect"]
     )
+    executor_input_boundary_gate = (
+        not reports[24].executable
+        and "executor_input_boundary_unvalidated" in reports[24].errors
+        and reports[25].executable
+        and "executor_input_boundary_unvalidated" not in reports[25].errors
+    )
     no_permission_promotion = all("permission_promotion" not in r.errors for r in reports)
-    gate = "pass" if roundtrip_ok and payload_blocked and validation_adjunct_blocked and validation_authz_variant_blocked and mixed_case_p0_blocked and agentguard_peer_claim_blocked and may_spoof_blocked and mixed_case_payload_blocked and ambiguous_ev_blocked and p0_shared_wiki_mutation_blocked and dream_service_identity_blocked and operational_substrate_mutation_blocked and authn_route_contradiction_blocked and unauthorized_control_authn_actor_blocked and control_authn_origin_missing_blocked and control_authn_incomplete_blocked and unknown_p0_scope_blocked and structured_action_scope_gate and mixed_case_peer_vld_approval_blocked and approval_ref_binding_blocked and unsupported_dialect_blocked and malformed_route_identity_blocked and chained_route_identity_blocked and lexical_route_identity_blocked and empty_field_key_blocked and empty_object_key_blocked and lexical_field_key_blocked and route_alias_data_only and no_permission_promotion else "fail"
+    gate = "pass" if roundtrip_ok and payload_blocked and validation_adjunct_blocked and validation_authz_variant_blocked and mixed_case_p0_blocked and agentguard_peer_claim_blocked and may_spoof_blocked and mixed_case_payload_blocked and ambiguous_ev_blocked and p0_shared_wiki_mutation_blocked and dream_service_identity_blocked and operational_substrate_mutation_blocked and authn_route_contradiction_blocked and unauthorized_control_authn_actor_blocked and control_authn_origin_missing_blocked and control_authn_incomplete_blocked and unknown_p0_scope_blocked and structured_action_scope_gate and mixed_case_peer_vld_approval_blocked and approval_ref_binding_blocked and unsupported_dialect_blocked and executor_input_boundary_gate and malformed_route_identity_blocked and chained_route_identity_blocked and lexical_route_identity_blocked and empty_field_key_blocked and empty_object_key_blocked and lexical_field_key_blocked and route_alias_data_only and no_permission_promotion else "fail"
     common = {
         "gate": gate,
         "metrics": {"ERc": 0, "SR": 1.0, "AR": 5, "RR": 5, "FR": 4, "PIR": 1.0, "FAPR": 0},
@@ -545,6 +581,7 @@ def run_benchmark_suite() -> dict[str, Any]:
             "lexical_field_key_blocked": lexical_field_key_blocked,
             "approval_ref_binding_blocked": approval_ref_binding_blocked,
             "unsupported_dialect_blocked": unsupported_dialect_blocked,
+            "executor_input_boundary_gate": executor_input_boundary_gate,
             "route_alias_data_only": route_alias_data_only,
         },
     }

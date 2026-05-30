@@ -953,9 +953,36 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertTrue(report["summary"].get("lexical_field_key_blocked"))
         self.assertTrue(report["summary"].get("approval_ref_binding_blocked"))
 
+    def test_executor_input_claim_without_boundary_evidence_blocks(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m63,sid=exec,seq=63,ttl=PT10M}|@chthonya>mac0sh|now|shared;"
+            "χ=read_only;may=read_only;out=executor_input"
+        )
+        report = validate_record(CyBroLogParser().parse(src))
+        self.assertFalse(report.executable)
+        self.assertEqual(report.gate, "blocked")
+        self.assertIn("executor_input_boundary_unvalidated", report.errors)
+
+    def test_executor_input_claim_with_boundary_evidence_can_pass_validator_gate(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m64,sid=exec,seq=64,ttl=PT10M}|@chthonya>mac0sh|now|shared;"
+            "val{id=val_exec,subject=executor_input,checks=[canonical_ast,policy_result,required_po_discharged],result=pass};"
+            "χ=read_only;may=read_only;"
+            "π=PO{id=po_exec,owner=chthonya,subject=m64,required=[canonical_ast,policy_result,required_po_discharged],state=discharged};"
+            "out=executor_input"
+        )
+        report = validate_record(CyBroLogParser().parse(src))
+        self.assertTrue(report.executable)
+        self.assertEqual(report.gate, "pass")
+        self.assertNotIn("executor_input_boundary_unvalidated", report.errors)
+
     def test_benchmark_suite_tracks_unsupported_dialect_blocked(self):
         report = run_benchmark_suite()
         self.assertTrue(report["summary"].get("unsupported_dialect_blocked"))
+
+    def test_benchmark_suite_tracks_executor_input_boundary_gate(self):
+        report = run_benchmark_suite()
+        self.assertTrue(report["summary"].get("executor_input_boundary_gate"))
 
 
 if __name__ == "__main__":
