@@ -103,7 +103,7 @@ raw_CyBroLog_text ⇏ executable_instruction
 payload_instruction ⇏ control_instruction
 summary(S) ⇏ primary_evidence(S)
 compression(C) ⇏ semantic_equivalence(C)
-executor_input := canonical_AST + policy_result + discharged_required_PO
+executor_input := canonical_AST + policy_result + discharged_required_PO + control_verified_authn
 ```
 
 ## Repository contents

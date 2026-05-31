@@ -966,6 +966,7 @@ class CyBroLogV22Tests(unittest.TestCase):
     def test_executor_input_claim_with_boundary_evidence_can_pass_validator_gate(self):
         src = (
             "ψ=CL2.v2.2|env{mid=m64,sid=exec,seq=64,ttl=PT10M}|@chthonya>mac0sh|now|shared;"
+            "authn{origin=chthonya,channel=control,verified=true,trust=control_verified,executable=true};"
             "val{id=val_exec,subject=executor_input,checks=[canonical_ast,policy_result,required_po_discharged],result=pass};"
             "χ=read_only;may=read_only;"
             "π=PO{id=po_exec,owner=chthonya,subject=m64,required=[canonical_ast,policy_result,required_po_discharged],state=discharged};"
@@ -976,6 +977,19 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertEqual(report.gate, "pass")
         self.assertNotIn("executor_input_boundary_unvalidated", report.errors)
 
+    def test_executor_input_boundary_rejects_self_asserted_tool_provenance(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m65,sid=exec,seq=65,ttl=PT10M}|@tool>chthonya|now|shared;"
+            "val{id=val_exec,subject=executor_input,checks=[canonical_ast,policy_result,required_po_discharged],result=pass};"
+            "χ=read_only;may=read_only;"
+            "π=PO{id=po_exec,owner=tool,subject=m65,required=[canonical_ast,policy_result,required_po_discharged],state=discharged};"
+            "out=executor_input"
+        )
+        report = validate_record(CyBroLogParser().parse(src))
+        self.assertFalse(report.executable)
+        self.assertEqual(report.gate, "blocked")
+        self.assertIn("executor_input_provenance_unverified", report.errors)
+
     def test_benchmark_suite_tracks_unsupported_dialect_blocked(self):
         report = run_benchmark_suite()
         self.assertTrue(report["summary"].get("unsupported_dialect_blocked"))
@@ -983,6 +997,7 @@ class CyBroLogV22Tests(unittest.TestCase):
     def test_benchmark_suite_tracks_executor_input_boundary_gate(self):
         report = run_benchmark_suite()
         self.assertTrue(report["summary"].get("executor_input_boundary_gate"))
+        self.assertTrue(report["summary"].get("executor_input_provenance_gate"))
 
 
 if __name__ == "__main__":

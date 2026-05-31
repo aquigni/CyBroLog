@@ -44,6 +44,8 @@ out=<state>
 
 `may=approved[scope]{ref}` is approval-shaped only when both `scope` and `ref` are lexical tokens: `scope` uses lowercase `[a-z0-9_-]+`, and `ref` uses `[A-Za-z_][A-Za-z0-9_-]*`. The `ref` must name a matching `ε` evidence item with `id=<ref>`, `source=user`, an allowed natural-language user-approval kind, `verified=true`, and exact `scope=<scope>`. Peer claims, dangling refs, or delimiter-bearing refs remain non-authoritative and fail closed.
 
+`out=executor_input` is a reserved execution-boundary claim, not an ordinary output label. It is executable only when the record also carries control-verified `authn{origin=<same-route-actor>,channel=control,verified=true,trust=control_verified,executable=true}`, a passing `val{subject=executor_input,...}` ledger whose checks include `canonical_ast`, `policy_result`, and `required_po_discharged`, and a discharged `π`/`pi` proof obligation. Tool, peer, payload, or other non-control self-assertions of `val{}` plus PO remain blocked with `executor_input_provenance_unverified`.
+
 ## Delimiters
 
 Values containing `; | = : [ ] { } "` or newlines must be JSON strings.
