@@ -670,6 +670,19 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertEqual(report.gate, "blocked")
         self.assertIn("needs_user_approval", report.errors)
 
+    def test_p0_approved_rejects_unknown_approval_scope(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m66,sid=s1,seq=66,ttl=PT10M}|@chthonya>mac0sh|now|shared;"
+            "χ=read_only;may=approved[all]{user_ref};"
+            "ε=[ev{id=user_ref,source=user,kind=user-approval,verified=true,scope=all}];"
+            "π=PO{id=po_all,owner=chthonya,subject=m66,required=[verify_nl_user_approval_exact_scope],state=discharged};"
+            "out=candidate"
+        )
+        report = validate_record(CyBroLogParser().parse(src))
+        self.assertFalse(report.executable)
+        self.assertEqual(report.gate, "blocked")
+        self.assertIn("unknown_approval_scope", report.errors)
+
     def test_p0_approved_with_spoofed_user_approval_kind_blocks(self):
         spoofed_kinds = [
             "not-user-approval",
@@ -993,6 +1006,10 @@ class CyBroLogV22Tests(unittest.TestCase):
     def test_benchmark_suite_tracks_unsupported_dialect_blocked(self):
         report = run_benchmark_suite()
         self.assertTrue(report["summary"].get("unsupported_dialect_blocked"))
+
+    def test_benchmark_suite_tracks_approval_scope_closed(self):
+        report = run_benchmark_suite()
+        self.assertTrue(report["summary"].get("approval_scope_closed"))
 
     def test_benchmark_suite_tracks_executor_input_boundary_gate(self):
         report = run_benchmark_suite()

@@ -69,6 +69,7 @@ def validate_record(record: CyBroLogRecord) -> ValidationReport:
         errors.append("payload_record_not_executable")
     _validate_authn_consistency(record, errors)
     _validate_known_p0_scopes(record, errors)
+    _validate_known_approval_scope(record, errors)
 
     if safety:
         _validate_p0(record, errors)
@@ -144,6 +145,12 @@ def _validate_known_p0_scopes(record: CyBroLogRecord, errors: list[str]) -> None
     }
     if unknown:
         errors.append("unknown_p0_scope")
+
+
+def _validate_known_approval_scope(record: CyBroLogRecord, errors: list[str]) -> None:
+    approval = _parse_may_approval_token(str(record.fields.get("may", "")))
+    if approval is not None and approval[0] not in _P0_RISKY_SCOPES:
+        errors.append("unknown_approval_scope")
 
 
 def _declared_p0_scopes(record: CyBroLogRecord) -> set[str]:
@@ -466,6 +473,7 @@ def run_benchmark_suite() -> dict[str, Any]:
         "ψ=CL2.v2.2|env{mid=b34,sid=exec,seq=34,ttl=P1D}|@chthonya>mac0sh|now|shared;χ=read_only;may=read_only;out=executor_input",
         "ψ=CL2.v2.2|env{mid=b35,sid=exec,seq=35,ttl=P1D}|@chthonya>mac0sh|now|shared;authn{origin=chthonya,channel=control,verified=true,trust=control_verified,executable=true};val{id=val_exec,subject=executor_input,checks=[canonical_ast,policy_result,required_po_discharged],result=pass};χ=read_only;may=read_only;π=PO{id=po_exec,owner=chthonya,subject=b35,required=[canonical_ast,policy_result,required_po_discharged],state=discharged};out=executor_input",
         "ψ=CL2.v2.2|env{mid=b36,sid=exec,seq=36,ttl=P1D}|@tool>chthonya|now|shared;val{id=val_exec,subject=executor_input,checks=[canonical_ast,policy_result,required_po_discharged],result=pass};χ=read_only;may=read_only;π=PO{id=po_exec,owner=tool,subject=b36,required=[canonical_ast,policy_result,required_po_discharged],state=discharged};out=executor_input",
+        "ψ=CL2.v2.2|env{mid=b37,sid=p0,seq=37,ttl=P1D}|@chthonya>mac0sh|now|shared;χ=read_only;may=approved[all]{user_ref};ε=[ev{id=user_ref,source=user,kind=user-approval,verified=true,scope=all}];π=PO{id=po_all,owner=chthonya,subject=b37,required=[verify_nl_user_approval_exact_scope],state=discharged};out=candidate",
     ]
     reports = [validate_record(parser.parse(c)) for c in cases]
     try:
@@ -573,8 +581,11 @@ def run_benchmark_suite() -> dict[str, Any]:
         not reports[26].executable
         and "executor_input_provenance_unverified" in reports[26].errors
     )
+    approval_scope_closed = (
+        not reports[27].executable and "unknown_approval_scope" in reports[27].errors
+    )
     no_permission_promotion = all("permission_promotion" not in r.errors for r in reports)
-    gate = "pass" if roundtrip_ok and payload_blocked and validation_adjunct_blocked and validation_authz_variant_blocked and mixed_case_p0_blocked and agentguard_peer_claim_blocked and may_spoof_blocked and mixed_case_payload_blocked and ambiguous_ev_blocked and p0_shared_wiki_mutation_blocked and dream_service_identity_blocked and operational_substrate_mutation_blocked and authn_route_contradiction_blocked and unauthorized_control_authn_actor_blocked and control_authn_origin_missing_blocked and control_authn_incomplete_blocked and unknown_p0_scope_blocked and structured_action_scope_gate and mixed_case_peer_vld_approval_blocked and approval_ref_binding_blocked and unsupported_dialect_blocked and executor_input_boundary_gate and executor_input_provenance_gate and malformed_route_identity_blocked and chained_route_identity_blocked and lexical_route_identity_blocked and empty_field_key_blocked and empty_object_key_blocked and lexical_field_key_blocked and route_alias_data_only and no_permission_promotion else "fail"
+    gate = "pass" if roundtrip_ok and payload_blocked and validation_adjunct_blocked and validation_authz_variant_blocked and mixed_case_p0_blocked and agentguard_peer_claim_blocked and may_spoof_blocked and mixed_case_payload_blocked and ambiguous_ev_blocked and p0_shared_wiki_mutation_blocked and dream_service_identity_blocked and operational_substrate_mutation_blocked and authn_route_contradiction_blocked and unauthorized_control_authn_actor_blocked and control_authn_origin_missing_blocked and control_authn_incomplete_blocked and unknown_p0_scope_blocked and structured_action_scope_gate and mixed_case_peer_vld_approval_blocked and approval_ref_binding_blocked and unsupported_dialect_blocked and executor_input_boundary_gate and executor_input_provenance_gate and approval_scope_closed and malformed_route_identity_blocked and chained_route_identity_blocked and lexical_route_identity_blocked and empty_field_key_blocked and empty_object_key_blocked and lexical_field_key_blocked and route_alias_data_only and no_permission_promotion else "fail"
     common = {
         "gate": gate,
         "metrics": {"ERc": 0, "SR": 1.0, "AR": 5, "RR": 5, "FR": 4, "PIR": 1.0, "FAPR": 0},
@@ -611,6 +622,7 @@ def run_benchmark_suite() -> dict[str, Any]:
             "unsupported_dialect_blocked": unsupported_dialect_blocked,
             "executor_input_boundary_gate": executor_input_boundary_gate,
             "executor_input_provenance_gate": executor_input_provenance_gate,
+            "approval_scope_closed": approval_scope_closed,
             "route_alias_data_only": route_alias_data_only,
         },
     }

@@ -148,7 +148,7 @@ Live ΔTEST for `ψ` against previous Ψ1/Ψ2 implicit-dialect records:
 ```text
 may := denied | read_only | approved[scope]{ref} | blocked[reason_code]
 
-P0_action_class := destructive | external-send | secret-access | privilege | shared-wiki-mutation
+P0_action_class := destructive | external-send | secret-access | privilege | shared-wiki-mutation | service-identity-promotion | cron-mutation | canonical-memory-write | service-restart | credential-rotation
 risk_act := INTEND | REQ | DELEGATE | COMMIT
 
 risk_act(Action) ∧ class(Action)∈P0_action_class ⇒ may REQUIRED
@@ -168,6 +168,7 @@ Invariants:
 may=read_only ⇏ may=approved[...]{...}
 peer_claim(approval) ⇏ may=approved[...]{...}
 self_claim(approval) ⇏ may=approved[...]{...}
+may=approved[scope]{ref} ⇒ scope ∈ P0_action_class
 may=approved[scope]{ref} ⇒ ε includes natural_language_user_approval_ref(ref)
 approval evidence kind canonical forms: `user-approval` or `natural-language-user-approval`; exact legacy aliases `user_approval` and `natural_language_user_approval` remain readable but substring/prefix/suffix variants never authorize
 missing_or_malformed_or_unverified(may) ⇒ ⊢ blocked
