@@ -585,7 +585,44 @@ def run_benchmark_suite() -> dict[str, Any]:
         not reports[27].executable and "unknown_approval_scope" in reports[27].errors
     )
     no_permission_promotion = all("permission_promotion" not in r.errors for r in reports)
-    gate = "pass" if roundtrip_ok and payload_blocked and validation_adjunct_blocked and validation_authz_variant_blocked and mixed_case_p0_blocked and agentguard_peer_claim_blocked and may_spoof_blocked and mixed_case_payload_blocked and ambiguous_ev_blocked and p0_shared_wiki_mutation_blocked and dream_service_identity_blocked and operational_substrate_mutation_blocked and authn_route_contradiction_blocked and unauthorized_control_authn_actor_blocked and control_authn_origin_missing_blocked and control_authn_incomplete_blocked and unknown_p0_scope_blocked and structured_action_scope_gate and mixed_case_peer_vld_approval_blocked and approval_ref_binding_blocked and unsupported_dialect_blocked and executor_input_boundary_gate and executor_input_provenance_gate and approval_scope_closed and malformed_route_identity_blocked and chained_route_identity_blocked and lexical_route_identity_blocked and empty_field_key_blocked and empty_object_key_blocked and lexical_field_key_blocked and route_alias_data_only and no_permission_promotion else "fail"
+    required_gate_results = {
+        "roundtrip_ok": roundtrip_ok,
+        "payload_blocked": payload_blocked,
+        "validation_adjunct_blocked": validation_adjunct_blocked,
+        "validation_authz_variant_blocked": validation_authz_variant_blocked,
+        "mixed_case_p0_blocked": mixed_case_p0_blocked,
+        "agentguard_peer_claim_blocked": agentguard_peer_claim_blocked,
+        "may_spoof_blocked": may_spoof_blocked,
+        "mixed_case_payload_blocked": mixed_case_payload_blocked,
+        "ambiguous_ev_blocked": ambiguous_ev_blocked,
+        "p0_shared_wiki_mutation_blocked": p0_shared_wiki_mutation_blocked,
+        "dream_service_identity_blocked": dream_service_identity_blocked,
+        "operational_substrate_mutation_blocked": operational_substrate_mutation_blocked,
+        "authn_route_contradiction_blocked": authn_route_contradiction_blocked,
+        "unauthorized_control_authn_actor_blocked": unauthorized_control_authn_actor_blocked,
+        "control_authn_origin_missing_blocked": control_authn_origin_missing_blocked,
+        "control_authn_incomplete_blocked": control_authn_incomplete_blocked,
+        "unknown_p0_scope_blocked": unknown_p0_scope_blocked,
+        "structured_action_scope_gate": structured_action_scope_gate,
+        "mixed_case_peer_vld_approval_blocked": mixed_case_peer_vld_approval_blocked,
+        "approval_ref_binding_blocked": approval_ref_binding_blocked,
+        "unsupported_dialect_blocked": unsupported_dialect_blocked,
+        "executor_input_boundary_gate": executor_input_boundary_gate,
+        "executor_input_provenance_gate": executor_input_provenance_gate,
+        "approval_scope_closed": approval_scope_closed,
+        "malformed_route_identity_blocked": malformed_route_identity_blocked,
+        "chained_route_identity_blocked": chained_route_identity_blocked,
+        "lexical_route_identity_blocked": lexical_route_identity_blocked,
+        "empty_field_key_blocked": empty_field_key_blocked,
+        "empty_object_key_blocked": empty_object_key_blocked,
+        "lexical_field_key_blocked": lexical_field_key_blocked,
+        "route_alias_data_only": route_alias_data_only,
+        "no_permission_promotion": no_permission_promotion,
+    }
+    failed_required_gates = [
+        name for name, passed in required_gate_results.items() if not passed
+    ]
+    gate = "pass" if not failed_required_gates else "fail"
     common = {
         "gate": gate,
         "metrics": {"ERc": 0, "SR": 1.0, "AR": 5, "RR": 5, "FR": 4, "PIR": 1.0, "FAPR": 0},
@@ -624,5 +661,8 @@ def run_benchmark_suite() -> dict[str, Any]:
             "executor_input_provenance_gate": executor_input_provenance_gate,
             "approval_scope_closed": approval_scope_closed,
             "route_alias_data_only": route_alias_data_only,
+            "required_gate_results": required_gate_results,
+            "failed_required_gates": failed_required_gates,
+            "required_gate_count": len(required_gate_results),
         },
     }

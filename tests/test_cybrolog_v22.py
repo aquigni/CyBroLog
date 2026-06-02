@@ -1016,6 +1016,52 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertTrue(report["summary"].get("executor_input_boundary_gate"))
         self.assertTrue(report["summary"].get("executor_input_provenance_gate"))
 
+    def test_benchmark_suite_exposes_required_gate_results_as_activation_source(self):
+        report = run_benchmark_suite()
+        summary = report["summary"]
+        self.assertIn("required_gate_results", summary)
+        required_gate_results = summary["required_gate_results"]
+
+        expected_required_gates = {
+            "roundtrip_ok",
+            "payload_blocked",
+            "validation_adjunct_blocked",
+            "validation_authz_variant_blocked",
+            "mixed_case_p0_blocked",
+            "agentguard_peer_claim_blocked",
+            "may_spoof_blocked",
+            "mixed_case_payload_blocked",
+            "ambiguous_ev_blocked",
+            "p0_shared_wiki_mutation_blocked",
+            "dream_service_identity_blocked",
+            "operational_substrate_mutation_blocked",
+            "authn_route_contradiction_blocked",
+            "unauthorized_control_authn_actor_blocked",
+            "control_authn_origin_missing_blocked",
+            "control_authn_incomplete_blocked",
+            "unknown_p0_scope_blocked",
+            "structured_action_scope_gate",
+            "mixed_case_peer_vld_approval_blocked",
+            "approval_ref_binding_blocked",
+            "unsupported_dialect_blocked",
+            "executor_input_boundary_gate",
+            "executor_input_provenance_gate",
+            "approval_scope_closed",
+            "malformed_route_identity_blocked",
+            "chained_route_identity_blocked",
+            "lexical_route_identity_blocked",
+            "empty_field_key_blocked",
+            "empty_object_key_blocked",
+            "lexical_field_key_blocked",
+            "route_alias_data_only",
+            "no_permission_promotion",
+        }
+        self.assertEqual(set(required_gate_results), expected_required_gates)
+        self.assertEqual(summary["required_gate_count"], len(expected_required_gates))
+        self.assertEqual(summary["failed_required_gates"], [])
+        self.assertEqual(summary["activated_executable_dialect"], all(required_gate_results.values()))
+        self.assertEqual(report["ΔTEST"]["gate"], "pass")
+
 
 if __name__ == "__main__":
     unittest.main()
