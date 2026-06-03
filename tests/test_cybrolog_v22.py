@@ -1003,6 +1003,36 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertEqual(report.gate, "blocked")
         self.assertIn("executor_input_provenance_unverified", report.errors)
 
+    def test_executor_input_boundary_rejects_po_owner_mismatch(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m66,sid=exec,seq=66,ttl=PT10M}|@chthonya>mac0sh|now|shared;"
+            "authn{origin=chthonya,channel=control,verified=true,trust=control_verified,executable=true};"
+            "val{id=val_exec,subject=executor_input,checks=[canonical_ast,policy_result,required_po_discharged],result=pass};"
+            "χ=read_only;may=read_only;"
+            "π=PO{id=po_exec,owner=tool,subject=m66,required=[canonical_ast,policy_result,required_po_discharged],state=discharged};"
+            "out=executor_input"
+        )
+        report = validate_record(CyBroLogParser().parse(src))
+        self.assertFalse(report.executable)
+        self.assertEqual(report.gate, "blocked")
+        self.assertIn("executor_input_po_binding_mismatch", report.errors)
+        self.assertIn("executor_input_boundary_unvalidated", report.errors)
+
+    def test_executor_input_boundary_rejects_po_subject_mismatch(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m67,sid=exec,seq=67,ttl=PT10M}|@chthonya>mac0sh|now|shared;"
+            "authn{origin=chthonya,channel=control,verified=true,trust=control_verified,executable=true};"
+            "val{id=val_exec,subject=executor_input,checks=[canonical_ast,policy_result,required_po_discharged],result=pass};"
+            "χ=read_only;may=read_only;"
+            "π=PO{id=po_exec,owner=chthonya,subject=other_mid,required=[canonical_ast,policy_result,required_po_discharged],state=discharged};"
+            "out=executor_input"
+        )
+        report = validate_record(CyBroLogParser().parse(src))
+        self.assertFalse(report.executable)
+        self.assertEqual(report.gate, "blocked")
+        self.assertIn("executor_input_po_binding_mismatch", report.errors)
+        self.assertIn("executor_input_boundary_unvalidated", report.errors)
+
     def test_benchmark_suite_tracks_unsupported_dialect_blocked(self):
         report = run_benchmark_suite()
         self.assertTrue(report["summary"].get("unsupported_dialect_blocked"))
@@ -1015,6 +1045,7 @@ class CyBroLogV22Tests(unittest.TestCase):
         report = run_benchmark_suite()
         self.assertTrue(report["summary"].get("executor_input_boundary_gate"))
         self.assertTrue(report["summary"].get("executor_input_provenance_gate"))
+        self.assertTrue(report["summary"].get("executor_input_po_binding_gate"))
 
     def test_benchmark_suite_exposes_required_gate_results_as_activation_source(self):
         report = run_benchmark_suite()
@@ -1046,6 +1077,7 @@ class CyBroLogV22Tests(unittest.TestCase):
             "unsupported_dialect_blocked",
             "executor_input_boundary_gate",
             "executor_input_provenance_gate",
+            "executor_input_po_binding_gate",
             "approval_scope_closed",
             "malformed_route_identity_blocked",
             "chained_route_identity_blocked",

@@ -397,6 +397,13 @@ def _validate_executor_input_boundary(record: CyBroLogRecord, errors: list[str])
     control_verified = _has_control_verified_authn(record)
     if not control_verified:
         errors.append("executor_input_provenance_unverified")
+    po_binds_current_record = (
+        isinstance(po, dict)
+        and po.get("owner") == record.actor
+        and po.get("subject") == record.env.get("mid")
+    )
+    if isinstance(po, dict) and not po_binds_current_record:
+        errors.append("executor_input_po_binding_mismatch")
     validated = (
         control_verified
         and isinstance(val, dict)
@@ -405,6 +412,7 @@ def _validate_executor_input_boundary(record: CyBroLogRecord, errors: list[str])
         and required_checks.issubset(check_set)
         and isinstance(po, dict)
         and po.get("state") == "discharged"
+        and po_binds_current_record
     )
     if not validated:
         errors.append("executor_input_boundary_unvalidated")
@@ -415,10 +423,12 @@ def _has_control_verified_authn(record: CyBroLogRecord) -> bool:
     if not isinstance(authn, dict) or not isinstance(record.actor, str):
         return False
     origin = authn.get("origin")
+    channel = authn.get("channel")
+    trust = authn.get("trust")
     actor_norm = record.actor.casefold()
     origin_norm = origin.casefold() if isinstance(origin, str) else None
-    channel_norm = authn.get("channel").casefold() if isinstance(authn.get("channel"), str) else None
-    trust_norm = authn.get("trust").casefold() if isinstance(authn.get("trust"), str) else None
+    channel_norm = channel.casefold() if isinstance(channel, str) else None
+    trust_norm = trust.casefold() if isinstance(trust, str) else None
     return (
         actor_norm in _CONTROL_AUTHN_ACTORS
         and origin_norm == actor_norm
@@ -474,6 +484,7 @@ def run_benchmark_suite() -> dict[str, Any]:
         "ψ=CL2.v2.2|env{mid=b35,sid=exec,seq=35,ttl=P1D}|@chthonya>mac0sh|now|shared;authn{origin=chthonya,channel=control,verified=true,trust=control_verified,executable=true};val{id=val_exec,subject=executor_input,checks=[canonical_ast,policy_result,required_po_discharged],result=pass};χ=read_only;may=read_only;π=PO{id=po_exec,owner=chthonya,subject=b35,required=[canonical_ast,policy_result,required_po_discharged],state=discharged};out=executor_input",
         "ψ=CL2.v2.2|env{mid=b36,sid=exec,seq=36,ttl=P1D}|@tool>chthonya|now|shared;val{id=val_exec,subject=executor_input,checks=[canonical_ast,policy_result,required_po_discharged],result=pass};χ=read_only;may=read_only;π=PO{id=po_exec,owner=tool,subject=b36,required=[canonical_ast,policy_result,required_po_discharged],state=discharged};out=executor_input",
         "ψ=CL2.v2.2|env{mid=b37,sid=p0,seq=37,ttl=P1D}|@chthonya>mac0sh|now|shared;χ=read_only;may=approved[all]{user_ref};ε=[ev{id=user_ref,source=user,kind=user-approval,verified=true,scope=all}];π=PO{id=po_all,owner=chthonya,subject=b37,required=[verify_nl_user_approval_exact_scope],state=discharged};out=candidate",
+        "ψ=CL2.v2.2|env{mid=b38,sid=exec,seq=38,ttl=P1D}|@chthonya>mac0sh|now|shared;authn{origin=chthonya,channel=control,verified=true,trust=control_verified,executable=true};val{id=val_exec,subject=executor_input,checks=[canonical_ast,policy_result,required_po_discharged],result=pass};χ=read_only;may=read_only;π=PO{id=po_exec,owner=tool,subject=b38,required=[canonical_ast,policy_result,required_po_discharged],state=discharged};out=executor_input",
     ]
     reports = [validate_record(parser.parse(c)) for c in cases]
     try:
@@ -584,6 +595,11 @@ def run_benchmark_suite() -> dict[str, Any]:
     approval_scope_closed = (
         not reports[27].executable and "unknown_approval_scope" in reports[27].errors
     )
+    executor_input_po_binding_gate = (
+        not reports[28].executable
+        and "executor_input_po_binding_mismatch" in reports[28].errors
+        and "executor_input_boundary_unvalidated" in reports[28].errors
+    )
     no_permission_promotion = all("permission_promotion" not in r.errors for r in reports)
     required_gate_results = {
         "roundtrip_ok": roundtrip_ok,
@@ -609,6 +625,7 @@ def run_benchmark_suite() -> dict[str, Any]:
         "unsupported_dialect_blocked": unsupported_dialect_blocked,
         "executor_input_boundary_gate": executor_input_boundary_gate,
         "executor_input_provenance_gate": executor_input_provenance_gate,
+        "executor_input_po_binding_gate": executor_input_po_binding_gate,
         "approval_scope_closed": approval_scope_closed,
         "malformed_route_identity_blocked": malformed_route_identity_blocked,
         "chained_route_identity_blocked": chained_route_identity_blocked,
@@ -659,6 +676,7 @@ def run_benchmark_suite() -> dict[str, Any]:
             "unsupported_dialect_blocked": unsupported_dialect_blocked,
             "executor_input_boundary_gate": executor_input_boundary_gate,
             "executor_input_provenance_gate": executor_input_provenance_gate,
+            "executor_input_po_binding_gate": executor_input_po_binding_gate,
             "approval_scope_closed": approval_scope_closed,
             "route_alias_data_only": route_alias_data_only,
             "required_gate_results": required_gate_results,
