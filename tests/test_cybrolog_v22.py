@@ -980,7 +980,7 @@ class CyBroLogV22Tests(unittest.TestCase):
         src = (
             "ψ=CL2.v2.2|env{mid=m64,sid=exec,seq=64,ttl=PT10M}|@chthonya>mac0sh|now|shared;"
             "authn{origin=chthonya,channel=control,verified=true,trust=control_verified,executable=true};"
-            "val{id=val_exec,subject=executor_input,checks=[canonical_ast,policy_result,required_po_discharged],result=pass};"
+            "val{id=val_exec,subject=executor_input,owner=chthonya,record=m64,checks=[canonical_ast,policy_result,required_po_discharged],result=pass};"
             "χ=read_only;may=read_only;"
             "π=PO{id=po_exec,owner=chthonya,subject=m64,required=[canonical_ast,policy_result,required_po_discharged],state=discharged};"
             "out=executor_input"
@@ -993,7 +993,7 @@ class CyBroLogV22Tests(unittest.TestCase):
     def test_executor_input_boundary_rejects_self_asserted_tool_provenance(self):
         src = (
             "ψ=CL2.v2.2|env{mid=m65,sid=exec,seq=65,ttl=PT10M}|@tool>chthonya|now|shared;"
-            "val{id=val_exec,subject=executor_input,checks=[canonical_ast,policy_result,required_po_discharged],result=pass};"
+            "val{id=val_exec,subject=executor_input,owner=tool,record=m65,checks=[canonical_ast,policy_result,required_po_discharged],result=pass};"
             "χ=read_only;may=read_only;"
             "π=PO{id=po_exec,owner=tool,subject=m65,required=[canonical_ast,policy_result,required_po_discharged],state=discharged};"
             "out=executor_input"
@@ -1007,7 +1007,7 @@ class CyBroLogV22Tests(unittest.TestCase):
         src = (
             "ψ=CL2.v2.2|env{mid=m66,sid=exec,seq=66,ttl=PT10M}|@chthonya>mac0sh|now|shared;"
             "authn{origin=chthonya,channel=control,verified=true,trust=control_verified,executable=true};"
-            "val{id=val_exec,subject=executor_input,checks=[canonical_ast,policy_result,required_po_discharged],result=pass};"
+            "val{id=val_exec,subject=executor_input,owner=chthonya,record=m66,checks=[canonical_ast,policy_result,required_po_discharged],result=pass};"
             "χ=read_only;may=read_only;"
             "π=PO{id=po_exec,owner=tool,subject=m66,required=[canonical_ast,policy_result,required_po_discharged],state=discharged};"
             "out=executor_input"
@@ -1022,7 +1022,7 @@ class CyBroLogV22Tests(unittest.TestCase):
         src = (
             "ψ=CL2.v2.2|env{mid=m67,sid=exec,seq=67,ttl=PT10M}|@chthonya>mac0sh|now|shared;"
             "authn{origin=chthonya,channel=control,verified=true,trust=control_verified,executable=true};"
-            "val{id=val_exec,subject=executor_input,checks=[canonical_ast,policy_result,required_po_discharged],result=pass};"
+            "val{id=val_exec,subject=executor_input,owner=chthonya,record=m67,checks=[canonical_ast,policy_result,required_po_discharged],result=pass};"
             "χ=read_only;may=read_only;"
             "π=PO{id=po_exec,owner=chthonya,subject=other_mid,required=[canonical_ast,policy_result,required_po_discharged],state=discharged};"
             "out=executor_input"
@@ -1032,6 +1032,42 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertEqual(report.gate, "blocked")
         self.assertIn("executor_input_po_binding_mismatch", report.errors)
         self.assertIn("executor_input_boundary_unvalidated", report.errors)
+
+    def test_executor_input_boundary_rejects_val_owner_mismatch(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m68,sid=exec,seq=68,ttl=PT10M}|@chthonya>mac0sh|now|shared;"
+            "authn{origin=chthonya,channel=control,verified=true,trust=control_verified,executable=true};"
+            "val{id=val_exec,subject=executor_input,owner=mac0sh,record=m68,checks=[canonical_ast,policy_result,required_po_discharged],result=pass};"
+            "χ=read_only;may=read_only;"
+            "π=PO{id=po_exec,owner=chthonya,subject=m68,required=[canonical_ast,policy_result,required_po_discharged],state=discharged};"
+            "out=executor_input"
+        )
+        report = validate_record(CyBroLogParser().parse(src))
+        self.assertFalse(report.executable)
+        self.assertEqual(report.gate, "blocked")
+        self.assertIn("executor_input_val_binding_mismatch", report.errors)
+        self.assertIn("executor_input_boundary_unvalidated", report.errors)
+
+    def test_executor_input_boundary_rejects_missing_val_binding_fields(self):
+        cases = [
+            "val{id=val_exec,subject=executor_input,record=m69,checks=[canonical_ast,policy_result,required_po_discharged],result=pass}",
+            "val{id=val_exec,subject=executor_input,owner=chthonya,checks=[canonical_ast,policy_result,required_po_discharged],result=pass}",
+        ]
+        for val in cases:
+            with self.subTest(val=val):
+                src = (
+                    "ψ=CL2.v2.2|env{mid=m69,sid=exec,seq=69,ttl=PT10M}|@chthonya>mac0sh|now|shared;"
+                    "authn{origin=chthonya,channel=control,verified=true,trust=control_verified,executable=true};"
+                    f"{val};"
+                    "χ=read_only;may=read_only;"
+                    "π=PO{id=po_exec,owner=chthonya,subject=m69,required=[canonical_ast,policy_result,required_po_discharged],state=discharged};"
+                    "out=executor_input"
+                )
+                report = validate_record(CyBroLogParser().parse(src))
+                self.assertFalse(report.executable)
+                self.assertEqual(report.gate, "blocked")
+                self.assertIn("executor_input_val_binding_mismatch", report.errors)
+                self.assertIn("executor_input_boundary_unvalidated", report.errors)
 
     def test_benchmark_suite_tracks_unsupported_dialect_blocked(self):
         report = run_benchmark_suite()
@@ -1046,6 +1082,7 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertTrue(report["summary"].get("executor_input_boundary_gate"))
         self.assertTrue(report["summary"].get("executor_input_provenance_gate"))
         self.assertTrue(report["summary"].get("executor_input_po_binding_gate"))
+        self.assertTrue(report["summary"].get("executor_input_val_binding_gate"))
 
     def test_benchmark_suite_exposes_required_gate_results_as_activation_source(self):
         report = run_benchmark_suite()
@@ -1078,6 +1115,7 @@ class CyBroLogV22Tests(unittest.TestCase):
             "executor_input_boundary_gate",
             "executor_input_provenance_gate",
             "executor_input_po_binding_gate",
+            "executor_input_val_binding_gate",
             "approval_scope_closed",
             "malformed_route_identity_blocked",
             "chained_route_identity_blocked",

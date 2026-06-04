@@ -475,7 +475,7 @@ raw_CyBroLog_text ⇏ executable_instruction
 payload_instruction ⇏ control_instruction
 summary(S) ⇏ primary_evidence(S)
 compression(C) ⇏ semantic_equivalence(C)
-executor_input := canonical_AST + policy_result + discharged_required_PO(bound_to_current_record) + control_verified_authn
+executor_input := canonical_AST + policy_result + discharged_required_PO(bound_to_current_record) + validation_ledger(bound_to_current_record) + control_verified_authn
 ```
 
 Hard rule:
@@ -636,6 +636,7 @@ Hard rules:
 safety_relevant(subject) ∧ val.result≠pass ⇒ ⊢ blocked[compression_not_validated]
 missing(val) ∧ cmp.status=validated ⇒ ⊢ blocked[missing_validation_ledger]
 out=executor_input ∧ ¬control_verified_authn ⇒ ⊢ blocked[executor_input_provenance_unverified]
+out=executor_input ∧ ¬(val.owner=@actor ∧ val.record=env.mid) ⇒ ⊢ blocked[executor_input_val_binding_mismatch]
 out=executor_input ∧ ¬(π.owner=@actor ∧ π.subject=env.mid) ⇒ ⊢ blocked[executor_input_po_binding_mismatch]
 ```
 

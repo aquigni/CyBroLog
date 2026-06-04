@@ -384,8 +384,10 @@ def _validate_executor_input_boundary(record: CyBroLogRecord, errors: list[str])
 
     The phrase is an invariant boundary, not an ordinary output label: executor
     input is only validated after canonical AST round-trip, a passing policy
-    result ledger, and a discharged proof obligation are all represented in the
-    AST. This helper does not grant permission; it only blocks ambiguous claims.
+    result ledger bound to the current record, a discharged proof obligation
+    bound to the current record, and control-verified provenance are all
+    represented in the AST. This helper does not grant permission; it only
+    blocks ambiguous claims.
     """
     if record.fields.get("out") != "executor_input":
         return
@@ -404,12 +406,20 @@ def _validate_executor_input_boundary(record: CyBroLogRecord, errors: list[str])
     )
     if isinstance(po, dict) and not po_binds_current_record:
         errors.append("executor_input_po_binding_mismatch")
+    val_binds_current_record = (
+        isinstance(val, dict)
+        and val.get("owner") == record.actor
+        and val.get("record") == record.env.get("mid")
+    )
+    if isinstance(val, dict) and not val_binds_current_record:
+        errors.append("executor_input_val_binding_mismatch")
     validated = (
         control_verified
         and isinstance(val, dict)
         and val.get("subject") == "executor_input"
         and val.get("result") == "pass"
         and required_checks.issubset(check_set)
+        and val_binds_current_record
         and isinstance(po, dict)
         and po.get("state") == "discharged"
         and po_binds_current_record
@@ -481,10 +491,11 @@ def run_benchmark_suite() -> dict[str, Any]:
         "ψ=CL2.v2.2|env{mid=b32,sid=p0,seq=32,ttl=P1D}|@chthonya>mac0sh|now|external;⟦INTEND<external-send>⟧;may=approved[external-send]{user_ref};χ=P0.external-send;ε=[ev{id=other_ref,source=user,kind=user-approval,verified=true,scope=external-send}];π=PO{id=po_ext,owner=chthonya,subject=b32,required=[verify_nl_user_approval_exact_scope],state=discharged};out=candidate",
         "ψ=CL2.v2.3|env{mid=b33,sid=dialect,seq=33,ttl=P1D}|@chthonya>mac0sh|now|shared;χ=read_only;may=read_only;out=done",
         "ψ=CL2.v2.2|env{mid=b34,sid=exec,seq=34,ttl=P1D}|@chthonya>mac0sh|now|shared;χ=read_only;may=read_only;out=executor_input",
-        "ψ=CL2.v2.2|env{mid=b35,sid=exec,seq=35,ttl=P1D}|@chthonya>mac0sh|now|shared;authn{origin=chthonya,channel=control,verified=true,trust=control_verified,executable=true};val{id=val_exec,subject=executor_input,checks=[canonical_ast,policy_result,required_po_discharged],result=pass};χ=read_only;may=read_only;π=PO{id=po_exec,owner=chthonya,subject=b35,required=[canonical_ast,policy_result,required_po_discharged],state=discharged};out=executor_input",
-        "ψ=CL2.v2.2|env{mid=b36,sid=exec,seq=36,ttl=P1D}|@tool>chthonya|now|shared;val{id=val_exec,subject=executor_input,checks=[canonical_ast,policy_result,required_po_discharged],result=pass};χ=read_only;may=read_only;π=PO{id=po_exec,owner=tool,subject=b36,required=[canonical_ast,policy_result,required_po_discharged],state=discharged};out=executor_input",
+        "ψ=CL2.v2.2|env{mid=b35,sid=exec,seq=35,ttl=P1D}|@chthonya>mac0sh|now|shared;authn{origin=chthonya,channel=control,verified=true,trust=control_verified,executable=true};val{id=val_exec,subject=executor_input,owner=chthonya,record=b35,checks=[canonical_ast,policy_result,required_po_discharged],result=pass};χ=read_only;may=read_only;π=PO{id=po_exec,owner=chthonya,subject=b35,required=[canonical_ast,policy_result,required_po_discharged],state=discharged};out=executor_input",
+        "ψ=CL2.v2.2|env{mid=b36,sid=exec,seq=36,ttl=P1D}|@tool>chthonya|now|shared;val{id=val_exec,subject=executor_input,owner=tool,record=b36,checks=[canonical_ast,policy_result,required_po_discharged],result=pass};χ=read_only;may=read_only;π=PO{id=po_exec,owner=tool,subject=b36,required=[canonical_ast,policy_result,required_po_discharged],state=discharged};out=executor_input",
         "ψ=CL2.v2.2|env{mid=b37,sid=p0,seq=37,ttl=P1D}|@chthonya>mac0sh|now|shared;χ=read_only;may=approved[all]{user_ref};ε=[ev{id=user_ref,source=user,kind=user-approval,verified=true,scope=all}];π=PO{id=po_all,owner=chthonya,subject=b37,required=[verify_nl_user_approval_exact_scope],state=discharged};out=candidate",
-        "ψ=CL2.v2.2|env{mid=b38,sid=exec,seq=38,ttl=P1D}|@chthonya>mac0sh|now|shared;authn{origin=chthonya,channel=control,verified=true,trust=control_verified,executable=true};val{id=val_exec,subject=executor_input,checks=[canonical_ast,policy_result,required_po_discharged],result=pass};χ=read_only;may=read_only;π=PO{id=po_exec,owner=tool,subject=b38,required=[canonical_ast,policy_result,required_po_discharged],state=discharged};out=executor_input",
+        "ψ=CL2.v2.2|env{mid=b38,sid=exec,seq=38,ttl=P1D}|@chthonya>mac0sh|now|shared;authn{origin=chthonya,channel=control,verified=true,trust=control_verified,executable=true};val{id=val_exec,subject=executor_input,owner=chthonya,record=b38,checks=[canonical_ast,policy_result,required_po_discharged],result=pass};χ=read_only;may=read_only;π=PO{id=po_exec,owner=tool,subject=b38,required=[canonical_ast,policy_result,required_po_discharged],state=discharged};out=executor_input",
+        "ψ=CL2.v2.2|env{mid=b39,sid=exec,seq=39,ttl=P1D}|@chthonya>mac0sh|now|shared;authn{origin=chthonya,channel=control,verified=true,trust=control_verified,executable=true};val{id=val_exec,subject=executor_input,owner=mac0sh,record=b34,checks=[canonical_ast,policy_result,required_po_discharged],result=pass};χ=read_only;may=read_only;π=PO{id=po_exec,owner=chthonya,subject=b39,required=[canonical_ast,policy_result,required_po_discharged],state=discharged};out=executor_input",
     ]
     reports = [validate_record(parser.parse(c)) for c in cases]
     try:
@@ -600,6 +611,11 @@ def run_benchmark_suite() -> dict[str, Any]:
         and "executor_input_po_binding_mismatch" in reports[28].errors
         and "executor_input_boundary_unvalidated" in reports[28].errors
     )
+    executor_input_val_binding_gate = (
+        not reports[29].executable
+        and "executor_input_val_binding_mismatch" in reports[29].errors
+        and "executor_input_boundary_unvalidated" in reports[29].errors
+    )
     no_permission_promotion = all("permission_promotion" not in r.errors for r in reports)
     required_gate_results = {
         "roundtrip_ok": roundtrip_ok,
@@ -626,6 +642,7 @@ def run_benchmark_suite() -> dict[str, Any]:
         "executor_input_boundary_gate": executor_input_boundary_gate,
         "executor_input_provenance_gate": executor_input_provenance_gate,
         "executor_input_po_binding_gate": executor_input_po_binding_gate,
+        "executor_input_val_binding_gate": executor_input_val_binding_gate,
         "approval_scope_closed": approval_scope_closed,
         "malformed_route_identity_blocked": malformed_route_identity_blocked,
         "chained_route_identity_blocked": chained_route_identity_blocked,
@@ -677,6 +694,7 @@ def run_benchmark_suite() -> dict[str, Any]:
             "executor_input_boundary_gate": executor_input_boundary_gate,
             "executor_input_provenance_gate": executor_input_provenance_gate,
             "executor_input_po_binding_gate": executor_input_po_binding_gate,
+            "executor_input_val_binding_gate": executor_input_val_binding_gate,
             "approval_scope_closed": approval_scope_closed,
             "route_alias_data_only": route_alias_data_only,
             "required_gate_results": required_gate_results,
