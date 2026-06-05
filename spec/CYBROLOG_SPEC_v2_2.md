@@ -984,6 +984,7 @@ out=repair_candidate
 ```text
 CL2.v2.2 = proposed Caveman-informed optimization layer.
 Adoption requires ΔCAVETEST + existing ΔTEST/ΔLANGTEST/ΔMEGACTX.
+Executable CL2.v2.2 frame slots are explicit: after the route, non-empty `time` and `scope;...` slots are required, and the semicolon is mandatory even when the body is empty; missing/empty slots fail closed as `malformed_frame_slot`.
 No safety-relevant action may depend on compressed surface alone.
 No approval, denial, secret boundary, evidence ref, proof obligation, destination, idempotency key, span ref, hash, path, command, code block, or version number may be compressed unless exact AST equivalence is proven.
 ```

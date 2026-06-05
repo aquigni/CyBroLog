@@ -90,12 +90,17 @@ class CyBroLogParser:
             raise ValueError("malformed_route_identity")
         idx += 1
 
-        time = parts[idx] if idx < len(parts) else None
-        scope_and_fields = parts[idx + 1] if idx + 1 < len(parts) else ""
-        if ";" in scope_and_fields:
-            scope, field_text = scope_and_fields.split(";", 1)
-        else:
-            scope, field_text = scope_and_fields, ""
+        if idx >= len(parts) or not parts[idx].strip():
+            raise ValueError("malformed_frame_slot")
+        time = parts[idx]
+        if idx + 1 >= len(parts):
+            raise ValueError("malformed_frame_slot")
+        scope_and_fields = parts[idx + 1]
+        if ";" not in scope_and_fields:
+            raise ValueError("malformed_frame_slot")
+        scope, field_text = scope_and_fields.split(";", 1)
+        if not scope.strip():
+            raise ValueError("malformed_frame_slot")
 
         fields: dict[str, Any] = {}
         atoms: list[str] = []

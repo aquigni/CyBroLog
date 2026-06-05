@@ -327,6 +327,30 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertEqual(ast.fields["obj:display_name"], "chthonya/server")
         self.assertEqual(CyBroLogParser().parse(render_record(ast)).to_canonical(), ast.to_canonical())
 
+    def test_parser_rejects_missing_or_empty_frame_slots(self):
+        malformed_frames = [
+            "ψ=CL2.v2.2|env{mid=m118,sid=frame,seq=118,ttl=PT10M}|@chthonya",
+            "ψ=CL2.v2.2|env{mid=m119,sid=frame,seq=119,ttl=PT10M}|@chthonya|now",
+            "ψ=CL2.v2.2|env{mid=m120,sid=frame,seq=120,ttl=PT10M}|@chthonya||shared;χ=read_only;may=read_only;out=candidate",
+            "ψ=CL2.v2.2|env{mid=m121,sid=frame,seq=121,ttl=PT10M}|@chthonya|now|;χ=read_only;may=read_only;out=candidate",
+            "ψ=CL2.v2.2|env{mid=m122,sid=frame,seq=122,ttl=PT10M}|@chthonya|now|shared",
+        ]
+        for src in malformed_frames:
+            with self.subTest(src=src):
+                with self.assertRaisesRegex(ValueError, "malformed_frame_slot"):
+                    CyBroLogParser().parse(src)
+
+    def test_parser_allows_explicit_empty_body_frame(self):
+        src = (
+            "ψ=CL2.v2.2|env{mid=m123,sid=frame,seq=123,ttl=PT10M}|"
+            "@mac0sh|2026-06-05T05:34:00Z|shared;   "
+        )
+        ast = CyBroLogParser().parse(src)
+        self.assertEqual(ast.time, "2026-06-05T05:34:00Z")
+        self.assertEqual(ast.scope, "shared")
+        self.assertEqual(ast.fields, {})
+        self.assertEqual(CyBroLogParser().parse(render_record(ast)).to_canonical(), ast.to_canonical())
+
     def test_parser_rejects_empty_top_level_field_keys(self):
         malformed_fields = ["=x", ":x"]
         for seq, field in enumerate(malformed_fields, start=102):
@@ -965,6 +989,7 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertTrue(report["summary"].get("empty_object_key_blocked"))
         self.assertTrue(report["summary"].get("lexical_field_key_blocked"))
         self.assertTrue(report["summary"].get("approval_ref_binding_blocked"))
+        self.assertTrue(report["summary"].get("frame_slot_blocked"))
 
     def test_executor_input_claim_without_boundary_evidence_blocks(self):
         src = (
@@ -1111,6 +1136,7 @@ class CyBroLogV22Tests(unittest.TestCase):
             "structured_action_scope_gate",
             "mixed_case_peer_vld_approval_blocked",
             "approval_ref_binding_blocked",
+            "frame_slot_blocked",
             "unsupported_dialect_blocked",
             "executor_input_boundary_gate",
             "executor_input_provenance_gate",

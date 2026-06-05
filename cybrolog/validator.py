@@ -550,6 +550,13 @@ def run_benchmark_suite() -> dict[str, Any]:
         except ValueError as exc:
             lexical_field_key_results.append("malformed_field_key" in str(exc) or "malformed_object_key:" in str(exc))
     lexical_field_key_blocked = all(lexical_field_key_results)
+    try:
+        parser.parse(
+            "ψ=CL2.v2.2|env{mid=b40,sid=frame,seq=40,ttl=P1D}|@chthonya|now"
+        )
+        frame_slot_blocked = False
+    except ValueError as exc:
+        frame_slot_blocked = "malformed_frame_slot" in str(exc)
     route_alias_record = validate_record(
         parser.parse(
             "ψ=CL2.v2.2|env{mid=b26,sid=route,seq=26,ttl=P1D}|@chthonya>mac0sh|now|shared;"
@@ -650,6 +657,7 @@ def run_benchmark_suite() -> dict[str, Any]:
         "empty_field_key_blocked": empty_field_key_blocked,
         "empty_object_key_blocked": empty_object_key_blocked,
         "lexical_field_key_blocked": lexical_field_key_blocked,
+        "frame_slot_blocked": frame_slot_blocked,
         "route_alias_data_only": route_alias_data_only,
         "no_permission_promotion": no_permission_promotion,
     }
@@ -689,6 +697,7 @@ def run_benchmark_suite() -> dict[str, Any]:
             "empty_field_key_blocked": empty_field_key_blocked,
             "empty_object_key_blocked": empty_object_key_blocked,
             "lexical_field_key_blocked": lexical_field_key_blocked,
+            "frame_slot_blocked": frame_slot_blocked,
             "approval_ref_binding_blocked": approval_ref_binding_blocked,
             "unsupported_dialect_blocked": unsupported_dialect_blocked,
             "executor_input_boundary_gate": executor_input_boundary_gate,
