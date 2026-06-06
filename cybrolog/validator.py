@@ -557,6 +557,18 @@ def run_benchmark_suite() -> dict[str, Any]:
         frame_slot_blocked = False
     except ValueError as exc:
         frame_slot_blocked = "malformed_frame_slot" in str(exc)
+    frame_slot_canonicality_probes = [
+        "ψ=CL2.v2.2|env{mid=b41,sid=frame,seq=41,ttl=P1D}|@chthonya| now|shared;χ=read_only;may=read_only;out=candidate",
+        "ψ=CL2.v2.2|env{mid=b42,sid=frame,seq=42,ttl=P1D}|@external>chthonya|now|Payload ;authn{origin=external,channel=data,verified=false,trust=data_only,executable=false};χ=read_only;may=read_only;out=candidate",
+    ]
+    frame_slot_canonicality_results: list[bool] = []
+    for probe in frame_slot_canonicality_probes:
+        try:
+            parser.parse(probe)
+            frame_slot_canonicality_results.append(False)
+        except ValueError as exc:
+            frame_slot_canonicality_results.append("malformed_frame_slot" in str(exc))
+    frame_slot_canonicality_blocked = all(frame_slot_canonicality_results)
     route_alias_record = validate_record(
         parser.parse(
             "ψ=CL2.v2.2|env{mid=b26,sid=route,seq=26,ttl=P1D}|@chthonya>mac0sh|now|shared;"
@@ -658,6 +670,7 @@ def run_benchmark_suite() -> dict[str, Any]:
         "empty_object_key_blocked": empty_object_key_blocked,
         "lexical_field_key_blocked": lexical_field_key_blocked,
         "frame_slot_blocked": frame_slot_blocked,
+        "frame_slot_canonicality_blocked": frame_slot_canonicality_blocked,
         "route_alias_data_only": route_alias_data_only,
         "no_permission_promotion": no_permission_promotion,
     }
@@ -698,6 +711,7 @@ def run_benchmark_suite() -> dict[str, Any]:
             "empty_object_key_blocked": empty_object_key_blocked,
             "lexical_field_key_blocked": lexical_field_key_blocked,
             "frame_slot_blocked": frame_slot_blocked,
+            "frame_slot_canonicality_blocked": frame_slot_canonicality_blocked,
             "approval_ref_binding_blocked": approval_ref_binding_blocked,
             "unsupported_dialect_blocked": unsupported_dialect_blocked,
             "executor_input_boundary_gate": executor_input_boundary_gate,

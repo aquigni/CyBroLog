@@ -351,6 +351,18 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertEqual(ast.fields, {})
         self.assertEqual(CyBroLogParser().parse(render_record(ast)).to_canonical(), ast.to_canonical())
 
+    def test_parser_rejects_whitespace_padded_frame_slots(self):
+        padded_frames = [
+            "ψ=CL2.v2.2|env{mid=m124,sid=frame,seq=124,ttl=PT10M}|@chthonya| now|shared;χ=read_only;may=read_only;out=candidate",
+            "ψ=CL2.v2.2|env{mid=m125,sid=frame,seq=125,ttl=PT10M}|@chthonya|now |shared;χ=read_only;may=read_only;out=candidate",
+            "ψ=CL2.v2.2|env{mid=m126,sid=frame,seq=126,ttl=PT10M}|@chthonya|now| shared;χ=read_only;may=read_only;out=candidate",
+            "ψ=CL2.v2.2|env{mid=m127,sid=frame,seq=127,ttl=PT10M}|@external>chthonya|now|Payload ;authn{origin=external,channel=data,verified=false,trust=data_only,executable=false};χ=read_only;may=read_only;out=candidate",
+        ]
+        for src in padded_frames:
+            with self.subTest(src=src):
+                with self.assertRaisesRegex(ValueError, "malformed_frame_slot"):
+                    CyBroLogParser().parse(src)
+
     def test_parser_rejects_empty_top_level_field_keys(self):
         malformed_fields = ["=x", ":x"]
         for seq, field in enumerate(malformed_fields, start=102):
@@ -990,6 +1002,7 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertTrue(report["summary"].get("lexical_field_key_blocked"))
         self.assertTrue(report["summary"].get("approval_ref_binding_blocked"))
         self.assertTrue(report["summary"].get("frame_slot_blocked"))
+        self.assertTrue(report["summary"].get("frame_slot_canonicality_blocked"))
 
     def test_executor_input_claim_without_boundary_evidence_blocks(self):
         src = (
@@ -1137,6 +1150,7 @@ class CyBroLogV22Tests(unittest.TestCase):
             "mixed_case_peer_vld_approval_blocked",
             "approval_ref_binding_blocked",
             "frame_slot_blocked",
+            "frame_slot_canonicality_blocked",
             "unsupported_dialect_blocked",
             "executor_input_boundary_gate",
             "executor_input_provenance_gate",

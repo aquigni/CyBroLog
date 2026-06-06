@@ -93,13 +93,15 @@ class CyBroLogParser:
         if idx >= len(parts) or not parts[idx].strip():
             raise ValueError("malformed_frame_slot")
         time = parts[idx]
+        if time != time.strip():
+            raise ValueError("malformed_frame_slot")
         if idx + 1 >= len(parts):
             raise ValueError("malformed_frame_slot")
         scope_and_fields = parts[idx + 1]
         if ";" not in scope_and_fields:
             raise ValueError("malformed_frame_slot")
         scope, field_text = scope_and_fields.split(";", 1)
-        if not scope.strip():
+        if scope != scope.strip() or not scope.strip():
             raise ValueError("malformed_frame_slot")
 
         fields: dict[str, Any] = {}
