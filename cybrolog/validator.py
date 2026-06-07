@@ -569,6 +569,18 @@ def run_benchmark_suite() -> dict[str, Any]:
         except ValueError as exc:
             frame_slot_canonicality_results.append("malformed_frame_slot" in str(exc))
     frame_slot_canonicality_blocked = all(frame_slot_canonicality_results)
+    dialect_discriminant_canonicality_probes = [
+        "ψ= CL2.v2.2|env{mid=b43,sid=dialect,seq=43,ttl=P1D}|@chthonya|now|shared;χ=read_only;may=read_only;out=candidate",
+        "ψ=CL2.v2.2 |env{mid=b44,sid=dialect,seq=44,ttl=P1D}|@chthonya|now|shared;χ=read_only;may=read_only;out=candidate",
+    ]
+    dialect_discriminant_canonicality_results: list[bool] = []
+    for probe in dialect_discriminant_canonicality_probes:
+        try:
+            parser.parse(probe)
+            dialect_discriminant_canonicality_results.append(False)
+        except ValueError as exc:
+            dialect_discriminant_canonicality_results.append("malformed_dialect_discriminant" in str(exc))
+    dialect_discriminant_canonicality_blocked = all(dialect_discriminant_canonicality_results)
     route_alias_record = validate_record(
         parser.parse(
             "ψ=CL2.v2.2|env{mid=b26,sid=route,seq=26,ttl=P1D}|@chthonya>mac0sh|now|shared;"
@@ -671,6 +683,7 @@ def run_benchmark_suite() -> dict[str, Any]:
         "lexical_field_key_blocked": lexical_field_key_blocked,
         "frame_slot_blocked": frame_slot_blocked,
         "frame_slot_canonicality_blocked": frame_slot_canonicality_blocked,
+        "dialect_discriminant_canonicality_blocked": dialect_discriminant_canonicality_blocked,
         "route_alias_data_only": route_alias_data_only,
         "no_permission_promotion": no_permission_promotion,
     }
@@ -712,6 +725,7 @@ def run_benchmark_suite() -> dict[str, Any]:
             "lexical_field_key_blocked": lexical_field_key_blocked,
             "frame_slot_blocked": frame_slot_blocked,
             "frame_slot_canonicality_blocked": frame_slot_canonicality_blocked,
+            "dialect_discriminant_canonicality_blocked": dialect_discriminant_canonicality_blocked,
             "approval_ref_binding_blocked": approval_ref_binding_blocked,
             "unsupported_dialect_blocked": unsupported_dialect_blocked,
             "executor_input_boundary_gate": executor_input_boundary_gate,

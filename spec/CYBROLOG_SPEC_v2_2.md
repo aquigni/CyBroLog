@@ -92,12 +92,15 @@ Meaning:
 ψ := Ψ0.v0.1 | Ψ1.v0.4 | Ψ2.v0.1 | <future_registered_dialect.version>
 ```
 
+Executable CL2 surfaces treat the discriminant as an exact evidence slot. `ψ=CL2.v2.2` is canonical; `psi=CL2.v2.2` is retained as ASCII compatibility. The value after `ψ=` / `psi=` must be non-empty and must contain no leading or trailing whitespace. Whitespace-padded forms such as `ψ= CL2.v2.2|...`, `ψ=CL2.v2.2 |...`, or `psi= CL2.v2.2|...` fail closed with `malformed_dialect_discriminant` before canonical AST/policy evaluation.
+
 Invariant:
 
 ```text
 ψ optional ⇔ record is non-safety Ψ0-compatible routine note
 uses_non_Ψ0_semantics(record) ∨ safety_relevant(record) ⇒ ψ REQUIRED
 missing_or_unknown_or_unsupported(ψ) ∧ safety_relevant(record) ⇒ ⊢ non_executable ∧ non_authoritative
+whitespace_padded(ψ.value) ⇒ ⊢ malformed_dialect_discriminant ∧ non_executable
 ψ identifies syntax/semantics only; ψ ⇏ approval ∧ ψ ⇏ fact ∧ ψ ⇏ permission
 ```
 

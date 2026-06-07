@@ -65,7 +65,9 @@ class CyBroLogParser:
         parts = _split_top(raw, "|")
         if len(parts) < 2 or not (parts[0].startswith("ψ=") or parts[0].startswith("psi=")):
             raise ValueError("missing dialect discriminant")
-        dialect = parts[0].split("=", 1)[1].strip()
+        dialect = parts[0].split("=", 1)[1]
+        if dialect != dialect.strip() or not dialect:
+            raise ValueError("malformed_dialect_discriminant")
         if dialect not in SUPPORTED_DIALECTS and dialect.startswith("CyBroLog"):
             raise ValueError("unsupported historical CyBroLog dialect for executable mode")
 

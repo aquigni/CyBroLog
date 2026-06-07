@@ -363,6 +363,23 @@ class CyBroLogV22Tests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, "malformed_frame_slot"):
                     CyBroLogParser().parse(src)
 
+    def test_parser_rejects_whitespace_padded_dialect_discriminant(self):
+        padded_dialects = [
+            "ψ= CL2.v2.2|env{mid=m128,sid=dialect,seq=128,ttl=PT10M}|@chthonya|now|shared;χ=read_only;may=read_only;out=candidate",
+            "ψ=CL2.v2.2 |env{mid=m129,sid=dialect,seq=129,ttl=PT10M}|@chthonya|now|shared;χ=read_only;may=read_only;out=candidate",
+            "psi= CL2.v2.2|env{mid=m130,sid=dialect,seq=130,ttl=PT10M}|@chthonya|now|shared;χ=read_only;may=read_only;out=candidate",
+        ]
+        for src in padded_dialects:
+            with self.subTest(src=src):
+                with self.assertRaisesRegex(ValueError, "malformed_dialect_discriminant"):
+                    CyBroLogParser().parse(src)
+
+        valid_ascii_alias = (
+            "psi=CL2.v2.2|env{mid=m131,sid=dialect,seq=131,ttl=PT10M}|"
+            "@chthonya|now|shared;χ=read_only;may=read_only;out=done"
+        )
+        self.assertEqual(CyBroLogParser().parse(valid_ascii_alias).dialect, "CL2.v2.2")
+
     def test_parser_rejects_empty_top_level_field_keys(self):
         malformed_fields = ["=x", ":x"]
         for seq, field in enumerate(malformed_fields, start=102):
@@ -1003,6 +1020,7 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertTrue(report["summary"].get("approval_ref_binding_blocked"))
         self.assertTrue(report["summary"].get("frame_slot_blocked"))
         self.assertTrue(report["summary"].get("frame_slot_canonicality_blocked"))
+        self.assertTrue(report["summary"].get("dialect_discriminant_canonicality_blocked"))
 
     def test_executor_input_claim_without_boundary_evidence_blocks(self):
         src = (
@@ -1151,6 +1169,7 @@ class CyBroLogV22Tests(unittest.TestCase):
             "approval_ref_binding_blocked",
             "frame_slot_blocked",
             "frame_slot_canonicality_blocked",
+            "dialect_discriminant_canonicality_blocked",
             "unsupported_dialect_blocked",
             "executor_input_boundary_gate",
             "executor_input_provenance_gate",
