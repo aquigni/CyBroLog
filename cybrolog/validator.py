@@ -586,6 +586,21 @@ def run_benchmark_suite() -> dict[str, Any]:
         renderer_frame_defaults_blocked = False
     except ValueError as exc:
         renderer_frame_defaults_blocked = "missing_canonical_frame_slot" in str(exc)
+    renderer_frame_canonicality_probes = [
+        CyBroLogRecord(dialect="CL2.v2.2", actor=" chthonya", time="now", scope="shared"),
+        CyBroLogRecord(dialect="CL2.v2.2", actor="chthonya/server", time="now", scope="shared"),
+        CyBroLogRecord(dialect="CL2.v2.2", actor="chthonya", recipient="mac0sh ", time="now", scope="shared"),
+        CyBroLogRecord(dialect="CL2.v2.2", actor="chthonya", time=" now", scope="shared"),
+        CyBroLogRecord(dialect="CL2.v2.2", actor="chthonya", time="now", scope="shared "),
+    ]
+    renderer_frame_canonicality_results: list[bool] = []
+    for probe in renderer_frame_canonicality_probes:
+        try:
+            render_record(probe)
+            renderer_frame_canonicality_results.append(False)
+        except ValueError as exc:
+            renderer_frame_canonicality_results.append("missing_canonical_frame_slot" in str(exc))
+    renderer_frame_canonicality_blocked = all(renderer_frame_canonicality_results)
     route_alias_record = validate_record(
         parser.parse(
             "ψ=CL2.v2.2|env{mid=b26,sid=route,seq=26,ttl=P1D}|@chthonya>mac0sh|now|shared;"
@@ -690,6 +705,7 @@ def run_benchmark_suite() -> dict[str, Any]:
         "frame_slot_canonicality_blocked": frame_slot_canonicality_blocked,
         "dialect_discriminant_canonicality_blocked": dialect_discriminant_canonicality_blocked,
         "renderer_frame_defaults_blocked": renderer_frame_defaults_blocked,
+        "renderer_frame_canonicality_blocked": renderer_frame_canonicality_blocked,
         "route_alias_data_only": route_alias_data_only,
         "no_permission_promotion": no_permission_promotion,
     }
@@ -733,6 +749,7 @@ def run_benchmark_suite() -> dict[str, Any]:
             "frame_slot_canonicality_blocked": frame_slot_canonicality_blocked,
             "dialect_discriminant_canonicality_blocked": dialect_discriminant_canonicality_blocked,
             "renderer_frame_defaults_blocked": renderer_frame_defaults_blocked,
+            "renderer_frame_canonicality_blocked": renderer_frame_canonicality_blocked,
             "approval_ref_binding_blocked": approval_ref_binding_blocked,
             "unsupported_dialect_blocked": unsupported_dialect_blocked,
             "executor_input_boundary_gate": executor_input_boundary_gate,

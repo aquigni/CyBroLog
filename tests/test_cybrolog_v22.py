@@ -397,6 +397,19 @@ class CyBroLogV22Tests(unittest.TestCase):
         )
         self.assertEqual(CyBroLogParser().parse(render_record(complete)).to_canonical(), complete.to_canonical())
 
+    def test_renderer_rejects_noncanonical_frame_slots(self):
+        noncanonical_records = [
+            CyBroLogRecord(dialect="CL2.v2.2", actor=" chthonya", time="now", scope="shared"),
+            CyBroLogRecord(dialect="CL2.v2.2", actor="chthonya/server", time="now", scope="shared"),
+            CyBroLogRecord(dialect="CL2.v2.2", actor="chthonya", recipient="mac0sh ", time="now", scope="shared"),
+            CyBroLogRecord(dialect="CL2.v2.2", actor="chthonya", time=" now", scope="shared"),
+            CyBroLogRecord(dialect="CL2.v2.2", actor="chthonya", time="now", scope="shared "),
+        ]
+        for record in noncanonical_records:
+            with self.subTest(record=record):
+                with self.assertRaisesRegex(ValueError, "missing_canonical_frame_slot"):
+                    render_record(record)
+
     def test_parser_rejects_empty_top_level_field_keys(self):
         malformed_fields = ["=x", ":x"]
         for seq, field in enumerate(malformed_fields, start=102):
@@ -1039,6 +1052,7 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertTrue(report["summary"].get("frame_slot_canonicality_blocked"))
         self.assertTrue(report["summary"].get("dialect_discriminant_canonicality_blocked"))
         self.assertTrue(report["summary"].get("renderer_frame_defaults_blocked"))
+        self.assertTrue(report["summary"].get("renderer_frame_canonicality_blocked"))
 
     def test_executor_input_claim_without_boundary_evidence_blocks(self):
         src = (
@@ -1189,6 +1203,7 @@ class CyBroLogV22Tests(unittest.TestCase):
             "frame_slot_canonicality_blocked",
             "dialect_discriminant_canonicality_blocked",
             "renderer_frame_defaults_blocked",
+            "renderer_frame_canonicality_blocked",
             "unsupported_dialect_blocked",
             "executor_input_boundary_gate",
             "executor_input_provenance_gate",

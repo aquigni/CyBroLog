@@ -147,7 +147,25 @@ class CyBroLogParser:
 
 
 def render_record(record: CyBroLogRecord) -> str:
-    if not record.actor or not record.time or not record.scope:
+    if (
+        not isinstance(record.actor, str)
+        or record.actor != record.actor.strip()
+        or not _is_route_identity(record.actor)
+        or (
+            record.recipient is not None
+            and (
+                not isinstance(record.recipient, str)
+                or record.recipient != record.recipient.strip()
+                or not _is_route_identity(record.recipient)
+            )
+        )
+        or not isinstance(record.time, str)
+        or record.time != record.time.strip()
+        or not record.time
+        or not isinstance(record.scope, str)
+        or record.scope != record.scope.strip()
+        or not record.scope
+    ):
         raise ValueError("missing_canonical_frame_slot")
     chunks: list[str] = [f"ψ={record.dialect}"]
     if record.env:
