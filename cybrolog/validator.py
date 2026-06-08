@@ -581,6 +581,11 @@ def run_benchmark_suite() -> dict[str, Any]:
         except ValueError as exc:
             dialect_discriminant_canonicality_results.append("malformed_dialect_discriminant" in str(exc))
     dialect_discriminant_canonicality_blocked = all(dialect_discriminant_canonicality_results)
+    try:
+        render_record(CyBroLogRecord(dialect="CL2.v2.2", actor="chthonya", time=None, scope="shared"))
+        renderer_frame_defaults_blocked = False
+    except ValueError as exc:
+        renderer_frame_defaults_blocked = "missing_canonical_frame_slot" in str(exc)
     route_alias_record = validate_record(
         parser.parse(
             "ψ=CL2.v2.2|env{mid=b26,sid=route,seq=26,ttl=P1D}|@chthonya>mac0sh|now|shared;"
@@ -684,6 +689,7 @@ def run_benchmark_suite() -> dict[str, Any]:
         "frame_slot_blocked": frame_slot_blocked,
         "frame_slot_canonicality_blocked": frame_slot_canonicality_blocked,
         "dialect_discriminant_canonicality_blocked": dialect_discriminant_canonicality_blocked,
+        "renderer_frame_defaults_blocked": renderer_frame_defaults_blocked,
         "route_alias_data_only": route_alias_data_only,
         "no_permission_promotion": no_permission_promotion,
     }
@@ -726,6 +732,7 @@ def run_benchmark_suite() -> dict[str, Any]:
             "frame_slot_blocked": frame_slot_blocked,
             "frame_slot_canonicality_blocked": frame_slot_canonicality_blocked,
             "dialect_discriminant_canonicality_blocked": dialect_discriminant_canonicality_blocked,
+            "renderer_frame_defaults_blocked": renderer_frame_defaults_blocked,
             "approval_ref_binding_blocked": approval_ref_binding_blocked,
             "unsupported_dialect_blocked": unsupported_dialect_blocked,
             "executor_input_boundary_gate": executor_input_boundary_gate,

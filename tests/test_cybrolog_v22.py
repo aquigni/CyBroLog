@@ -1,6 +1,6 @@
 import unittest
 
-from cybrolog import CyBroLogParser, render_record, validate_record, cave_codec, run_benchmark_suite
+from cybrolog import CyBroLogParser, CyBroLogRecord, render_record, validate_record, cave_codec, run_benchmark_suite
 
 
 class CyBroLogV22Tests(unittest.TestCase):
@@ -379,6 +379,23 @@ class CyBroLogV22Tests(unittest.TestCase):
             "@chthonya|now|shared;χ=read_only;may=read_only;out=done"
         )
         self.assertEqual(CyBroLogParser().parse(valid_ascii_alias).dialect, "CL2.v2.2")
+
+    def test_renderer_rejects_missing_canonical_frame_slots(self):
+        incomplete_records = [
+            CyBroLogRecord(dialect="CL2.v2.2", actor=None, time="now", scope="shared"),
+            CyBroLogRecord(dialect="CL2.v2.2", actor="chthonya", time=None, scope="shared"),
+            CyBroLogRecord(dialect="CL2.v2.2", actor="chthonya", time="now", scope=None),
+        ]
+        for record in incomplete_records:
+            with self.subTest(record=record):
+                with self.assertRaisesRegex(ValueError, "missing_canonical_frame_slot"):
+                    render_record(record)
+
+        complete = CyBroLogParser().parse(
+            "ψ=CL2.v2.2|env{mid=m132,sid=render,seq=132,ttl=PT10M}|"
+            "@chthonya>mac0sh|now|shared;χ=read_only;may=read_only;out=done"
+        )
+        self.assertEqual(CyBroLogParser().parse(render_record(complete)).to_canonical(), complete.to_canonical())
 
     def test_parser_rejects_empty_top_level_field_keys(self):
         malformed_fields = ["=x", ":x"]
@@ -1021,6 +1038,7 @@ class CyBroLogV22Tests(unittest.TestCase):
         self.assertTrue(report["summary"].get("frame_slot_blocked"))
         self.assertTrue(report["summary"].get("frame_slot_canonicality_blocked"))
         self.assertTrue(report["summary"].get("dialect_discriminant_canonicality_blocked"))
+        self.assertTrue(report["summary"].get("renderer_frame_defaults_blocked"))
 
     def test_executor_input_claim_without_boundary_evidence_blocks(self):
         src = (
@@ -1170,6 +1188,7 @@ class CyBroLogV22Tests(unittest.TestCase):
             "frame_slot_blocked",
             "frame_slot_canonicality_blocked",
             "dialect_discriminant_canonicality_blocked",
+            "renderer_frame_defaults_blocked",
             "unsupported_dialect_blocked",
             "executor_input_boundary_gate",
             "executor_input_provenance_gate",

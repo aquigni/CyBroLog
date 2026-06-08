@@ -987,7 +987,7 @@ out=repair_candidate
 ```text
 CL2.v2.2 = proposed Caveman-informed optimization layer.
 Adoption requires ΔCAVETEST + existing ΔTEST/ΔLANGTEST/ΔMEGACTX.
-Executable CL2.v2.2 frame slots are explicit and canonical: after the route, non-empty `time` and `scope;...` slots are required; both the `time` string and the pre-`;` scope string must have no leading/trailing whitespace; and the semicolon is mandatory even when the body is empty. Missing, empty, or whitespace-padded frame slots fail closed as `malformed_frame_slot`.
+Executable CL2.v2.2 frame slots are explicit and canonical: after the route, non-empty `time` and `scope;...` slots are required; both the `time` string and the pre-`;` scope string must have no leading/trailing whitespace; and the semicolon is mandatory even when the body is empty. Missing, empty, or whitespace-padded frame slots fail closed as `malformed_frame_slot`. Canonical rendering must not manufacture route/frame defaults: a constructed AST missing `actor`, `time`, or `scope` fails closed as `missing_canonical_frame_slot` rather than rendering `@`, `now`, or `shared` evidence.
 No safety-relevant action may depend on compressed surface alone.
 No approval, denial, secret boundary, evidence ref, proof obligation, destination, idempotency key, span ref, hash, path, command, code block, or version number may be compressed unless exact AST equivalence is proven.
 ```

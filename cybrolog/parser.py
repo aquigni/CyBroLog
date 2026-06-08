@@ -147,13 +147,15 @@ class CyBroLogParser:
 
 
 def render_record(record: CyBroLogRecord) -> str:
+    if not record.actor or not record.time or not record.scope:
+        raise ValueError("missing_canonical_frame_slot")
     chunks: list[str] = [f"ψ={record.dialect}"]
     if record.env:
         chunks.append("env" + _render_obj(record.env))
-    route = f"@{record.actor or ''}"
+    route = f"@{record.actor}"
     if record.recipient:
         route += f">{record.recipient}"
-    chunks.extend([route, record.time or "now"])
+    chunks.extend([route, record.time])
     body: list[str] = []
     for atom in record.atoms:
         body.append(atom)
@@ -165,7 +167,7 @@ def render_record(record: CyBroLogRecord) -> str:
             body.append(f"{key}{_render_obj(value)}")
         else:
             body.append(f"{key}={_render_value(value)}")
-    return "|".join(chunks + [f"{record.scope or 'shared'};" + ";".join(body)])
+    return "|".join(chunks + [f"{record.scope};" + ";".join(body)])
 
 
 def _field_order(fields: dict[str, Any]) -> list[str]:
